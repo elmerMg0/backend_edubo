@@ -37,7 +37,7 @@ class Curso extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['titulo', 'descripcion', 'duracion', 'nivel', 'ruta_aprendizaje_id', 'active'], 'required'],
+            [['titulo', 'descripcion', 'duracion', 'nivel', 'ruta_aprendizaje_id'], 'required'],
             [['ruta_aprendizaje_id'], 'default', 'value' => null],
             [['ruta_aprendizaje_id'], 'integer'],
             [['active'], 'boolean'],
