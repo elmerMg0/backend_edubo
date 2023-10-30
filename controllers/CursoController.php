@@ -86,8 +86,8 @@ class CursoController extends \yii\web\Controller
                 'page' => $currentPage,
                 'start' => $pagination->getOffset(),
                 'totalPages' => $totalPages,
-                'courses' => $course
-            ]
+            ],
+            'courses' => $course
         ];
         return $response;
     }

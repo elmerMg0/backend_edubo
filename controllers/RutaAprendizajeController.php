@@ -86,8 +86,8 @@ class RutaAprendizajeController extends \yii\web\Controller
                 'page' => $currentPage,
                 'start' => $pagination->getOffset(),
                 'totalPages' => $totalPages,
-                'roads' => $roads
-            ]
+            ],
+            'roads' => $roads
         ];
         return $response;
     }
