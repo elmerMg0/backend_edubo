@@ -3,6 +3,7 @@
 namespace app\controllers;
 
 use app\models\Clase;
+use app\models\Pregunta;
 use Exception;
 use Yii;
 use yii\data\Pagination;
@@ -191,6 +192,42 @@ class ClaseController extends \yii\web\Controller
                 "message" => "Clase no encontrado"
             ];
         }
+        return $response;
+    }
+
+    public function actionGetClassWithQuestions($name, $idClass, $pageSize = 5){
+        if($name === 'undefined')$name = null;
+        $query = Pregunta::find()
+                    ->where(['clase_id' => $idClass])  
+                    ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
+
+        $pagination = new Pagination([
+            'defaultPageSize' => $pageSize,
+            'totalCount' => $query->count(),
+        ]);
+
+        $questions = $query
+            ->orderBy('id DESC')
+            ->asArray()
+            ->offset($pagination->offset)
+            ->limit($pagination->limit)
+            ->all();
+
+        $currentPage = $pagination->getPage() + 1;
+        $totalPages = $pagination->getPageCount();
+        $response = [
+            'success' => true,
+            'message' => 'lista de preguntas por curso',
+            'pageInfo' => [
+                'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
+                'previus' => $currentPage == 1 ? null : $currentPage - 1,
+                'count' => count($questions),
+                'page' => $currentPage,
+                'start' => $pagination->getOffset(),
+                'totalPages' => $totalPages,
+            ],
+            'questionss' => $questions
+        ];
         return $response;
     }
 

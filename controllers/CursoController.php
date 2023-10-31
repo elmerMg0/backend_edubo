@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\Clase;
 use app\models\Curso;
 use Exception;
 use Yii;
@@ -191,6 +192,42 @@ class CursoController extends \yii\web\Controller
                 "message" => "Curso no encontrado"
             ];
         }
+        return $response;
+    }
+
+    public function actionGetCourseWithClasses($name, $idCourse, $pageSize = 5){
+        if($name === 'undefined')$name = null;
+        $query = Clase::find()
+                    ->where(['curso_id' => $idCourse])  
+                    ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
+
+        $pagination = new Pagination([
+            'defaultPageSize' => $pageSize,
+            'totalCount' => $query->count(),
+        ]);
+
+        $course = $query
+            ->orderBy('id DESC')
+            ->asArray()
+            ->offset($pagination->offset)
+            ->limit($pagination->limit)
+            ->all();
+
+        $currentPage = $pagination->getPage() + 1;
+        $totalPages = $pagination->getPageCount();
+        $response = [
+            'success' => true,
+            'message' => 'lista de cursos',
+            'pageInfo' => [
+                'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
+                'previus' => $currentPage == 1 ? null : $currentPage - 1,
+                'count' => count($course),
+                'page' => $currentPage,
+                'start' => $pagination->getOffset(),
+                'totalPages' => $totalPages,
+            ],
+            'courses' => $course
+        ];
         return $response;
     }
 }

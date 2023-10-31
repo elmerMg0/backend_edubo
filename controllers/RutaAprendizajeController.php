@@ -194,4 +194,18 @@ class RutaAprendizajeController extends \yii\web\Controller
         return $response;
     }
 
+    public function actionGetRoadsWithCourses($idRoad){
+        $courses = RutaAprendizaje::find()
+                            ->where(['id' => $idRoad])
+                            ->with('cursos')
+                            ->asArray()
+                            ->all();                    
+        $response = [
+            'success' => true,
+            'message' => 'Lista de coursos por ruta de aprendizaje',
+            'courses' => $courses 
+        ];
+        return $response;
+    }
+
 }
