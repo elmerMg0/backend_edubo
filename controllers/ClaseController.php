@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\Clase;
 use app\models\Pregunta;
+use app\models\Recurso;
 use Exception;
 use Yii;
 use yii\data\Pagination;
@@ -227,6 +228,42 @@ class ClaseController extends \yii\web\Controller
                 'totalPages' => $totalPages,
             ],
             'questions' => $questions
+        ];
+        return $response;
+    }
+
+    public function actionGetClassWithResources($name, $idClass, $pageSize = 5){
+        if($name === 'undefined')$name = null;
+        $query = Recurso::find()
+                    ->where(['clase_id' => $idClass])  
+                    ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
+
+        $pagination = new Pagination([
+            'defaultPageSize' => $pageSize,
+            'totalCount' => $query->count(),
+        ]);
+
+        $resources = $query
+            ->orderBy('id DESC')
+            ->asArray()
+            ->offset($pagination->offset)
+            ->limit($pagination->limit)
+            ->all();
+
+        $currentPage = $pagination->getPage() + 1;
+        $totalPages = $pagination->getPageCount();
+        $response = [
+            'success' => true,
+            'message' => 'lista de recursos por clase',
+            'pageInfo' => [
+                'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
+                'previus' => $currentPage == 1 ? null : $currentPage - 1,
+                'count' => count($resources),
+                'page' => $currentPage,
+                'start' => $pagination->getOffset(),
+                'totalPages' => $totalPages,
+            ],
+            'resources' => $resources
         ];
         return $response;
     }
