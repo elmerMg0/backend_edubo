@@ -226,7 +226,7 @@ class ClaseController extends \yii\web\Controller
                 'start' => $pagination->getOffset(),
                 'totalPages' => $totalPages,
             ],
-            'questionss' => $questions
+            'questions' => $questions
         ];
         return $response;
     }
