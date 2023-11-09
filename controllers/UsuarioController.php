@@ -23,6 +23,7 @@ class UsuarioController extends \yii\web\Controller
 
             ]
          ];
+
        /*   $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
             'except' => ['options']
@@ -61,7 +62,7 @@ class UsuarioController extends \yii\web\Controller
     }
 
    
-    public function actionCreateUser(){
+  /*   public function actionCreateUser(){
         //$params = Yii::$app->getRequest()->getBodyParams();
         $user = new Usuario();
         $file = UploadedFile::getInstanceByName('file');
@@ -112,7 +113,7 @@ class UsuarioController extends \yii\web\Controller
         }
         
         return $response;
-    }
+    } */
    /*  public function actionDeleteUser($id){
         $params= Usuario::findOne($id);
         if($params){
@@ -275,38 +276,66 @@ class UsuarioController extends \yii\web\Controller
     }
     public function actionLogin(){
         $params = Yii::$app->getRequest()->getBodyParams();
-        $username = $params['username'];
-        $user = Usuario::find()-> where(['username' => $username]) -> one();
-        $auth = Yii::$app-> authManager;
-        if( $user ){
-            $password = $params['password'];
+
+        $infomationUser = $this -> getInfoUser($params['access_token']);
+
+        $user = Usuario::find()->where(['email' => $infomationUser['email']]) -> one();
+
+        if(!$user){
+            $response = $this -> actionCreateUserWithExternalService($infomationUser);
+        }else{
+            /*The user is register  */
+            $password = $infomationUser['id'];
             if(Yii::$app->security->validatePassword($password, $user->password_hash)){
-                $role = $auth->getRolesByUser($user -> id);
                 $response = [
                     'success' => true,
-                    'message' => 'Inicio de sesion correcto',
-                    'accessToken' => $user -> access_token,
-                    'role' => $role,
-                    'id' => $user -> id
+                    'message' => 'Login exitoso',
+                    'infoUser' => [
+                        'accessToken' => $user -> access_token,
+                        'id' => $user -> id
+                    ]
                 ];
             }else{
                 $response = [
                     'success' => false,
-                    'message' => 'Usuario o contrasenia incorrectos!',
+                    'message' => 'Contrasena incorrecta',
                 ];
             }
-        }else{
-            $response = [
-                'success' => false,
-                'message' => 'Username o contrase;a incorrectos!'
-            ];
         }
         return $response;
     }
-    public function actionTest(){
-        return Yii::$app->getSecurity()->generatePasswordHash("cesar");
-    }
 
+
+    public function actionCreateUserWithExternalService($data){
+        //$params = Yii::$app->getRequest()->getBodyParams();
+            $user = new Usuario();
+            $user->nombre = $data["given_name"];
+            $user->apellido = $data["family_name"];
+            $user->email = $data["email"];
+            $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data["id"]);
+            $user->access_token = Yii::$app->security->generateRandomString();
+
+            if($user->save()){
+                Yii::$app->getResponse()->getStatusCode(201);
+                $response = [
+                    'success' => true,
+                    'message' => 'Login exitoso',
+                    'infoUser' => [
+                        'accessToken' => $user -> access_token,
+                        'id' => $user -> id
+                    ]
+                ];
+                
+            }else{
+                Yii::$app->getResponse()->setStatusCode(422,'Data Validation Failed.');
+                $response = [
+                    'success' => false,
+                    'message' => 'Parametros incorrectos',
+                    'usuario' => $user->errors,
+                ];
+            }
+        return $response;
+    }
     /* public function actionGetUsers( $pageSize = 5){
         $query = Usuario::find()
                         ->select(['usuario.id', 'usuario.nombres', 'usuario.tipo', 'usuario.url_image']);
@@ -388,16 +417,51 @@ class UsuarioController extends \yii\web\Controller
 
     public function actionGetTokenJwt()
     {
-        $token = Yii::$app->jwt->getBuilder()
-        ->setIssuer('http://example.com')
-        ->setAudience('http://example.org')
-        ->setId('4f1g23a12aa', true)
-        ->setIssuedAt(time())
-        ->setExpiration(time() + 3600)
-        ->set('uid', 1)
-        ->sign(Yii::$app->jwt->getSigner("HS256"), Yii::$app->jwt->key)
-        ->getToken();
-        return (string) $token;
+        $jwt = Yii::$app->jwt;
+		$signer = $jwt->getSigner('HS256');
+		$key = $jwt->getKey();
+		$time = time();
+
+		$jwtParams = Yii::$app->params['jwt'];
+
+		return $jwt->getBuilder()
+			->issuedBy($jwtParams['issuer'])
+			->permittedFor($jwtParams['audience'])
+			->identifiedBy($jwtParams['id'], true)
+			->issuedAt($time)
+			->expiresAt($time + $jwtParams['expire'])
+			//->withClaim('uid', $user->userID)
+			->getToken($signer, $key);
     
+    }
+
+    public function actionTest($token){
+        return $this -> getInfoUser($token);
+    }
+
+    /* Login
+       1. Search el correo  
+        1.1. Si ya existe el correo validar contrasenia, devolver el token y name del servicio google
+
+       2. Si no existe el correo crear, correo y id crear token.
+        2.1 Devolver token y name del servicio
+
+    */
+    private static function getInfoUser($token){
+        $uri = Yii::$app->params['apiGoogle'];
+        $url = $uri.'?access_token='. $token;
+        $crl = curl_init($url);
+        curl_setopt($crl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($crl, CURLOPT_HTTPHEADER, array(
+            'Authorization: Basic ' . $token,
+            'Content-Type: application/json',
+        ));
+        $res = curl_exec($crl);
+        curl_close($crl);  
+        if(!$res){
+            die('Error');
+        }
+        $response = json_decode($res);
+        return $response;
     }
 }
