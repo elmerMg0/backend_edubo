@@ -195,8 +195,9 @@ class RutaAprendizajeController extends \yii\web\Controller
     }
 
     public function actionGetRoadsWithCourses($idRoad){
+        $idRoad = isset($idRoad) ? $idRoad : null;
         $courses = RutaAprendizaje::find()
-                            ->where(['id' => $idRoad])
+                            ->andFilterWhere(['id' => $idRoad])
                             ->with('cursos')
                             ->asArray()
                             ->all();                    
