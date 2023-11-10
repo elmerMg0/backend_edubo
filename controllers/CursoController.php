@@ -19,6 +19,7 @@ class CursoController extends \yii\web\Controller
                 'create'=>['POST'],
                 'update'=>['POST'],
                 'disable-course'=>['GET'],
+                'course'=>['GET'],
             ]
          ];
         /*  $behaviors['authenticator'] = [
@@ -228,6 +229,33 @@ class CursoController extends \yii\web\Controller
             ],
             'courses' => $course
         ];
+        return $response;
+    }
+
+    public function actionCourse($idCourse){
+        $course = Curso::find()
+                        ->select(['curso.*'])
+                        ->where(['id' => $idCourse])
+                        ->one();
+        if($course){
+
+            $classes = Clase::find()
+                            ->where(['curso_id' => $idCourse, 'active' => true])
+                            ->all();
+            $response = [
+                'success' => true,
+                'message' => 'Lista de Cursos',
+                'data' => [
+                    'course' => $course,
+                    'classes' => $classes
+                ] 
+            ];
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'Cursos no encontrados'
+            ];
+        }
         return $response;
     }
 }
