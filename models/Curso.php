@@ -22,9 +22,12 @@ use Yii;
  * @property string|null $subtitle
  * @property string|null $you_learn
  * @property string|null $addressed_to
+ * @property string|null $slug
+ * @property int $professor_id
  *
  * @property Clase[] $clases
  * @property Inscripcion[] $inscripcions
+ * @property Professor $professor
  * @property RutaAprendizaje $rutaAprendizaje
  */
 class Curso extends \yii\db\ActiveRecord
@@ -43,17 +46,17 @@ class Curso extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['name', 'informacion', 'duracion', 'nivel', 'ruta_aprendizaje_id', 'active'], 'required'],
-            [['informacion', 'you_learn'], 'string'],
-            [['ruta_aprendizaje_id', 'students_count'], 'default', 'value' => null],
-            [['ruta_aprendizaje_id', 'students_count'], 'integer'],
+            [['name', 'informacion', 'duracion', 'nivel', 'ruta_aprendizaje_id', 'active', 'professor_id'], 'required'],
+            [['informacion', 'subtitle', 'you_learn', 'addressed_to'], 'string'],
+            [['ruta_aprendizaje_id', 'students_count', 'professor_id'], 'default', 'value' => null],
+            [['ruta_aprendizaje_id', 'students_count', 'professor_id'], 'integer'],
             [['active', 'is_free'], 'boolean'],
             [['update_ts', 'create_ts'], 'safe'],
-            [['name', 'addressed_to'], 'string', 'max' => 50],
+            [['name', 'slug'], 'string', 'max' => 50],
             [['duracion'], 'string', 'max' => 15],
             [['nivel'], 'string', 'max' => 10],
             [['url_image'], 'string', 'max' => 30],
-            [['subtitle'], 'string', 'max' => 80],
+            [['professor_id'], 'exist', 'skipOnError' => true, 'targetClass' => Professor::class, 'targetAttribute' => ['professor_id' => 'id']],
             [['ruta_aprendizaje_id'], 'exist', 'skipOnError' => true, 'targetClass' => RutaAprendizaje::class, 'targetAttribute' => ['ruta_aprendizaje_id' => 'id']],
         ];
     }
@@ -79,6 +82,8 @@ class Curso extends \yii\db\ActiveRecord
             'subtitle' => 'Subtitle',
             'you_learn' => 'You Learn',
             'addressed_to' => 'Addressed To',
+            'slug' => 'Slug',
+            'professor_id' => 'Professor ID',
         ];
     }
 
@@ -100,6 +105,16 @@ class Curso extends \yii\db\ActiveRecord
     public function getInscripcions()
     {
         return $this->hasMany(Inscripcion::class, ['curso_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Professor]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getProfessor()
+    {
+        return $this->hasOne(Professor::class, ['id' => 'professor_id']);
     }
 
     /**

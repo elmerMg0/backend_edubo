@@ -241,7 +241,14 @@ class CursoController extends \yii\web\Controller
 
             $classes = Clase::find()
                             ->where(['curso_id' => $idCourse, 'active' => true])
+                            ->with(['subjects' => function ($query) {
+                                    $query->select(['subject.*']) // Select only 'id' and 'nombre'
+                                          ->orderBy(['slug' => SORT_ASC]); // Order by 'nombre' in ascending order
+                                }
+                            ])
+                            ->asArray()
                             ->all();
+            
             $response = [
                 'success' => true,
                 'message' => 'Lista de Cursos',

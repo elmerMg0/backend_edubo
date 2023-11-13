@@ -16,11 +16,12 @@ use Yii;
  * @property int $numero_clase
  * @property string|null $update_ts
  * @property string $create_ts
+ * @property bool|null $is_public
  *
  * @property Avance[] $avances
  * @property Curso $curso
  * @property Pregunta[] $preguntas
- * @property Recurso[] $recursos
+ * @property Subject[] $subjects
  */
 class Clase extends \yii\db\ActiveRecord
 {
@@ -41,7 +42,7 @@ class Clase extends \yii\db\ActiveRecord
             [['titulo', 'descripcion', 'curso_id', 'numero_clase'], 'required'],
             [['curso_id', 'numero_clase'], 'default', 'value' => null],
             [['curso_id', 'numero_clase'], 'integer'],
-            [['active'], 'boolean'],
+            [['active', 'is_public'], 'boolean'],
             [['update_ts', 'create_ts'], 'safe'],
             [['titulo'], 'string', 'max' => 50],
             [['descripcion'], 'string', 'max' => 80],
@@ -65,6 +66,7 @@ class Clase extends \yii\db\ActiveRecord
             'numero_clase' => 'Numero Clase',
             'update_ts' => 'Update Ts',
             'create_ts' => 'Create Ts',
+            'is_public' => 'Is Public',
         ];
     }
 
@@ -99,12 +101,12 @@ class Clase extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Recursos]].
+     * Gets query for [[Subjects]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getRecursos()
+    public function getSubjects()
     {
-        return $this->hasMany(Recurso::class, ['clase_id' => 'id']);
+        return $this->hasMany(Subject::class, ['clase_id' => 'id']);
     }
 }

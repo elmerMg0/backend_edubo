@@ -14,6 +14,8 @@ use Yii;
  * @property bool $active
  * @property string|null $update_ts
  * @property string $create_ts
+ * @property string|null $slug
+ * @property string|null $url_image
  *
  * @property Curso[] $cursos
  */
@@ -34,12 +36,14 @@ class RutaAprendizaje extends \yii\db\ActiveRecord
     {
         return [
             [['nombre', 'descripcion', 'numero_cursos'], 'required'],
+            [['descripcion'], 'string'],
             [['numero_cursos'], 'default', 'value' => null],
             [['numero_cursos'], 'integer'],
             [['active'], 'boolean'],
             [['update_ts', 'create_ts'], 'safe'],
-            [['nombre'], 'string', 'max' => 50],
-            [['descripcion'], 'string', 'max' => 80],
+            [['nombre', 'slug', 'url_image'], 'string', 'max' => 50],
+            [['nombre'], 'unique'],
+            [['slug'], 'unique'],
         ];
     }
 
@@ -56,6 +60,8 @@ class RutaAprendizaje extends \yii\db\ActiveRecord
             'active' => 'Active',
             'update_ts' => 'Update Ts',
             'create_ts' => 'Create Ts',
+            'slug' => 'Slug',
+            'url_image' => 'Url Image',
         ];
     }
 

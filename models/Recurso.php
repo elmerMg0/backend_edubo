@@ -10,12 +10,12 @@ use Yii;
  * @property int $id
  * @property string|null $descripcion
  * @property string|null $url_video
- * @property int $clase_id
+ * @property int $subject_id
  * @property bool $active
  * @property string|null $update_ts
  * @property string $create_ts
  *
- * @property Clase $clase
+ * @property Subject $subject
  */
 class Recurso extends \yii\db\ActiveRecord
 {
@@ -34,12 +34,12 @@ class Recurso extends \yii\db\ActiveRecord
     {
         return [
             [['descripcion', 'url_video'], 'string'],
-            [['clase_id', 'active'], 'required'],
-            [['clase_id'], 'default', 'value' => null],
-            [['clase_id'], 'integer'],
+            [['subject_id', 'active'], 'required'],
+            [['subject_id'], 'default', 'value' => null],
+            [['subject_id'], 'integer'],
             [['active'], 'boolean'],
             [['update_ts', 'create_ts'], 'safe'],
-            [['clase_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clase::class, 'targetAttribute' => ['clase_id' => 'id']],
+            [['subject_id'], 'exist', 'skipOnError' => true, 'targetClass' => Subject::class, 'targetAttribute' => ['subject_id' => 'id']],
         ];
     }
 
@@ -52,7 +52,7 @@ class Recurso extends \yii\db\ActiveRecord
             'id' => 'ID',
             'descripcion' => 'Descripcion',
             'url_video' => 'Url Video',
-            'clase_id' => 'Clase ID',
+            'subject_id' => 'Subject ID',
             'active' => 'Active',
             'update_ts' => 'Update Ts',
             'create_ts' => 'Create Ts',
@@ -60,12 +60,12 @@ class Recurso extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Clase]].
+     * Gets query for [[Subject]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getClase()
+    public function getSubject()
     {
-        return $this->hasOne(Clase::class, ['id' => 'clase_id']);
+        return $this->hasOne(Subject::class, ['id' => 'subject_id']);
     }
 }

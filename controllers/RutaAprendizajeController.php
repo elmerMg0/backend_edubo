@@ -203,7 +203,7 @@ class RutaAprendizajeController extends \yii\web\Controller
                             ->all();                    
         $response = [
             'success' => true,
-            'message' => 'Lista de coursos por ruta de aprendizaje',
+            'message' => 'Lista de cursos por ruta de aprendizaje',
             'courses' => $courses 
         ];
         return $response;
