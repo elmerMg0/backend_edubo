@@ -2,7 +2,10 @@
 
 namespace app\controllers;
 
+use app\models\Avance;
 use app\models\Subject;
+use app\models\SubjectLikes;
+use Exception;
 use Yii;
 
 class SubjectController extends \yii\web\Controller
@@ -60,16 +63,36 @@ class SubjectController extends \yii\web\Controller
     }
 
 
-    public function actionGetSubject($idClass , $slugSubject){
+    public function actionGetSubject($nroClass , $slugSubject, $idCourse){
         $subject = Subject::find()  
-                            ->where(['clase_id' => $idClass, 'slug' => $slugSubject])
+                            ->select(['subject.*'])
+                            ->innerJoin('clase', 'clase.id = subject.clase_id')
+                            ->innerJoin('curso', 'curso.id = clase.curso_id')
+                            ->where(['curso.id' => $idCourse, 'numero_clase' => $nroClass, 'subject.slug' => $slugSubject])
                             ->one();
+
+        $views = 0;
+        $likes = 0;
+        if($subject){
+            $views = Avance::find()
+            ->where(['subject_id' => $subject['id']])
+            ->count();
+        
+            $likes = SubjectLikes::find()
+                    ->where(['subject_id' => $subject['id']])
+                    ->count();
+        }
+            
 
         if($subject){
             $response = [
                 'success' => true,
                 'message' => 'Lista de Cursos',
-                'subject' => $subject
+                'data' => [
+                    'subject' =>  $subject,
+                    'views' => $views,
+                    'likes' => $likes,
+                ]
             ];
         }else{
             $response = [
@@ -79,5 +102,26 @@ class SubjectController extends \yii\web\Controller
         }
         
         return $response;   
+    }
+
+    public function actionUpdateLikes($idSubject, $idStudent){
+        $record = SubjectLikes::find()->where(['subject_id' => $idSubject, 'estudiante_id' => $idStudent])->one(); 
+        if($record){
+            try{
+                if($record -> detete()){
+                    
+                }else{
+                    return 1;
+                }
+            }catch( Exception $e){
+                
+                return $e;
+            }
+        }else{
+            $record = new SubjectLikes();
+            $record -> subject_id = $idSubject;
+            $record -> estudiante_id = $idStudent;
+            $record -> save();
+        }
     }
 }

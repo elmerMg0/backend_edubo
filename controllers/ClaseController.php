@@ -6,6 +6,7 @@ use app\models\Avance;
 use app\models\Clase;
 use app\models\Pregunta;
 use app\models\Recurso;
+use app\models\SubjectLikes;
 use Exception;
 use Yii;
 use yii\data\Pagination;
@@ -278,10 +279,21 @@ class ClaseController extends \yii\web\Controller
                             ->where(['curso.id' => $idCourse, 'estudiante_id' => $idStudent])
                             ->all();
 
+        //list de subject que dio like el estudiante
+        $likeList = SubjectLikes::find()
+                            ->select(['subject_id'])
+                            ->innerJoin('subject', 'subject.id = subject_likes.subject_id')
+                            ->innerJoin('clase', 'clase.id = subject.clase_id')
+                            ->innerJoin('curso', 'curso.id = clase.curso_id')
+                            ->where(['curso.id' => $idCourse, 'estudiante_id' => $idStudent])
+                            ->all();
         $response = [
             'success' => true,
-            'message' => 'lista de avances',
-            'progress' => $progress
+            'message' => 'Informacion',
+            'data' => [
+                'progress' => $progress,
+                'likeList' => $likeList
+            ]
         ];
         return $response;
     }
