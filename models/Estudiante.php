@@ -19,6 +19,7 @@ use Yii;
  * @property int $puntos
  *
  * @property Avance[] $avances
+ * @property ClaseLikes[] $claseLikes
  * @property Inscripcion[] $inscripcions
  * @property Resultado[] $resultados
  */
@@ -74,7 +75,17 @@ class Estudiante extends \yii\db\ActiveRecord
      */
     public function getAvances()
     {
-        return $this->hasMany(Avance::class, ['id' => 'id']);
+        return $this->hasMany(Avance::class, ['estudiante_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[ClaseLikes]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getClaseLikes()
+    {
+        return $this->hasMany(ClaseLikes::class, ['estudiante_id' => 'id']);
     }
 
     /**

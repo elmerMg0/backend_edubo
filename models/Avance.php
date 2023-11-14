@@ -8,13 +8,13 @@ use Yii;
  * This is the model class for table "avance".
  *
  * @property int $id
- * @property int $clase_id
+ * @property int $subject_id
  * @property int $estudiante_id
  * @property string $create_ts
- * @property string $update_ts
+ * @property string|null $update_ts
  *
- * @property Clase $clase
- * @property Estudiante $id0
+ * @property Estudiante $estudiante
+ * @property Subject $subject
  */
 class Avance extends \yii\db\ActiveRecord
 {
@@ -32,12 +32,12 @@ class Avance extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['clase_id', 'estudiante_id', 'create_ts', 'update_ts'], 'required'],
-            [['clase_id', 'estudiante_id'], 'default', 'value' => null],
-            [['clase_id', 'estudiante_id'], 'integer'],
+            [['subject_id', 'estudiante_id'], 'required'],
+            [['subject_id', 'estudiante_id'], 'default', 'value' => null],
+            [['subject_id', 'estudiante_id'], 'integer'],
             [['create_ts', 'update_ts'], 'safe'],
-            [['clase_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clase::class, 'targetAttribute' => ['clase_id' => 'id']],
-            [['id'], 'exist', 'skipOnError' => true, 'targetClass' => Estudiante::class, 'targetAttribute' => ['id' => 'id']],
+            [['estudiante_id'], 'exist', 'skipOnError' => true, 'targetClass' => Estudiante::class, 'targetAttribute' => ['estudiante_id' => 'id']],
+            [['subject_id'], 'exist', 'skipOnError' => true, 'targetClass' => Subject::class, 'targetAttribute' => ['subject_id' => 'id']],
         ];
     }
 
@@ -48,7 +48,7 @@ class Avance extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'clase_id' => 'Clase ID',
+            'subject_id' => 'Subject ID',
             'estudiante_id' => 'Estudiante ID',
             'create_ts' => 'Create Ts',
             'update_ts' => 'Update Ts',
@@ -56,22 +56,22 @@ class Avance extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Clase]].
+     * Gets query for [[Estudiante]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getClase()
+    public function getEstudiante()
     {
-        return $this->hasOne(Clase::class, ['id' => 'clase_id']);
+        return $this->hasOne(Estudiante::class, ['id' => 'estudiante_id']);
     }
 
     /**
-     * Gets query for [[Id0]].
+     * Gets query for [[Subject]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getId0()
+    public function getSubject()
     {
-        return $this->hasOne(Estudiante::class, ['id' => 'id']);
+        return $this->hasOne(Subject::class, ['id' => 'subject_id']);
     }
 }
