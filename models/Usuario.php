@@ -15,14 +15,15 @@ use Yii;
  * @property string $access_token
  * @property int $plan_id
  * @property string $create_ts
- * @property string $update_ts
+ * @property string|null $update_ts
  * @property int $puntos
- * @property string $tipo
- * @property bool $active
  *
  * @property Avance[] $avances
  * @property Inscripcion[] $inscripcions
  * @property Resultado[] $resultados
+ * @property SubjectLikes[] $subjectLikes
+ * @property Subject[] $subjects
+ * @property Subject[] $subjects0
  */
 class Usuario extends \yii\db\ActiveRecord
 {
@@ -40,15 +41,13 @@ class Usuario extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['nombre', 'apellido', 'email', 'access_token', 'plan_id', 'update_ts', 'tipo', 'active'], 'required'],
+            [['nombre', 'apellido', 'email', 'access_token', 'plan_id'], 'required'],
             [['plan_id', 'puntos'], 'default', 'value' => null],
             [['plan_id', 'puntos'], 'integer'],
             [['create_ts', 'update_ts'], 'safe'],
-            [['active'], 'boolean'],
             [['nombre'], 'string', 'max' => 50],
             [['apellido'], 'string', 'max' => 80],
             [['email', 'password_hash', 'access_token'], 'string', 'max' => 250],
-            [['tipo'], 'string', 'max' => 15],
         ];
     }
 
@@ -68,8 +67,6 @@ class Usuario extends \yii\db\ActiveRecord
             'create_ts' => 'Create Ts',
             'update_ts' => 'Update Ts',
             'puntos' => 'Puntos',
-            'tipo' => 'Tipo',
-            'active' => 'Active',
         ];
     }
 
@@ -80,7 +77,7 @@ class Usuario extends \yii\db\ActiveRecord
      */
     public function getAvances()
     {
-        return $this->hasMany(Avance::class, ['id' => 'id']);
+        return $this->hasMany(Avance::class, ['estudiante_id' => 'id']);
     }
 
     /**
@@ -101,5 +98,35 @@ class Usuario extends \yii\db\ActiveRecord
     public function getResultados()
     {
         return $this->hasMany(Resultado::class, ['estudiante_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[SubjectLikes]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSubjectLikes()
+    {
+        return $this->hasMany(SubjectLikes::class, ['estudiante_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Subjects]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSubjects()
+    {
+        return $this->hasMany(Subject::class, ['id' => 'subject_id'])->viaTable('avance', ['estudiante_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Subjects0]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSubjects0()
+    {
+        return $this->hasMany(Subject::class, ['id' => 'subject_id'])->viaTable('subject_likes', ['estudiante_id' => 'id']);
     }
 }

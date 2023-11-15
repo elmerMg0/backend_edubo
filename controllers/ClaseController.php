@@ -276,16 +276,16 @@ class ClaseController extends \yii\web\Controller
                             ->innerJoin('subject', 'subject.id = avance.subject_id')
                             ->innerJoin('clase', 'clase.id = subject.clase_id')
                             ->innerJoin('curso', 'curso.id = clase.curso_id')
-                            ->where(['curso.id' => $idCourse, 'estudiante_id' => $idStudent])
+                            ->where(['curso.id' => $idCourse, 'usuario_id' => $idStudent])
                             ->all();
 
-        //list de subject que dio like el estudiante
+        //list de subject que dio like el usuaruio
         $likeList = SubjectLikes::find()
                             ->select(['subject_id'])
                             ->innerJoin('subject', 'subject.id = subject_likes.subject_id')
                             ->innerJoin('clase', 'clase.id = subject.clase_id')
                             ->innerJoin('curso', 'curso.id = clase.curso_id')
-                            ->where(['curso.id' => $idCourse, 'estudiante_id' => $idStudent])
+                            ->where(['curso.id' => $idCourse, 'usuario_id' => $idStudent])
                             ->all();
         $response = [
             'success' => true,
@@ -302,7 +302,7 @@ class ClaseController extends \yii\web\Controller
         
         $newProgress = new Avance();
         $newProgress -> subject_id = $idSubject;
-        $newProgress -> estudiante_id = $idStudent;
+        $newProgress -> usuario_id = $idStudent;
         try{
 
             if($newProgress -> save()){

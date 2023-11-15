@@ -110,7 +110,7 @@ class SubjectController extends \yii\web\Controller
     }
 
     public function actionUpdateLikes($idSubject, $idStudent){
-        $record = SubjectLikes::find()->where(['subject_id' => $idSubject, 'estudiante_id' => $idStudent])->one(); 
+        $record = SubjectLikes::find()->where(['subject_id' => $idSubject, 'usuario_id' => $idStudent])->one(); 
         if($record){
             try{
                 $record -> delete();
@@ -127,7 +127,7 @@ class SubjectController extends \yii\web\Controller
         }else{
             $record = new SubjectLikes();
             $record -> subject_id = $idSubject;
-            $record -> estudiante_id = $idStudent;
+            $record -> usuario_id = $idStudent;
             $record -> save();
             $response = [
                 'success' => true,

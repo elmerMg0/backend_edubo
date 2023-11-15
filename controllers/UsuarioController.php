@@ -4,6 +4,8 @@ namespace app\controllers;
 
 use app\models\Usuario;
 use Exception;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Yii;
 use yii\data\Pagination;
 use yii\helpers\Json;
@@ -279,18 +281,18 @@ class UsuarioController extends \yii\web\Controller
 
         $infomationUser = $this -> getInfoUser($params['access_token']);
 
-        $user = Usuario::find()->where(['email' => $infomationUser['email']]) -> one();
+        $user = Usuario::find()->where(['email' => $infomationUser -> email]) -> one();
 
         if(!$user){
             $response = $this -> actionCreateUserWithExternalService($infomationUser);
         }else{
             /*The user is register  */
-            $password = $infomationUser['id'];
+            $password = $infomationUser -> id;
             if(Yii::$app->security->validatePassword($password, $user->password_hash)){
                 $response = [
                     'success' => true,
                     'message' => 'Login exitoso',
-                    'infoUser' => [
+                    'data' => [
                         'accessToken' => $user -> access_token,
                         'id' => $user -> id
                     ]
@@ -306,21 +308,22 @@ class UsuarioController extends \yii\web\Controller
     }
 
 
-    public function actionCreateUserWithExternalService($data){
+    private function actionCreateUserWithExternalService($data){
         //$params = Yii::$app->getRequest()->getBodyParams();
             $user = new Usuario();
-            $user->nombre = $data["given_name"];
-            $user->apellido = $data["family_name"];
-            $user->email = $data["email"];
-            $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data["id"]);
-            $user->access_token = Yii::$app->security->generateRandomString();
-
+            $user->nombre = $data -> given_name;
+            $user->apellido = $data -> family_name;
+            $user->email = $data -> email;
+            $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data -> id);
+            $user->access_token = $this -> actionGetTokenJwt($data);
+            $user -> plan_id = 1;
+            $user -> puntos = 20;
             if($user->save()){
                 Yii::$app->getResponse()->getStatusCode(201);
                 $response = [
                     'success' => true,
                     'message' => 'Login exitoso',
-                    'infoUser' => [
+                    'data' => [
                         'accessToken' => $user -> access_token,
                         'id' => $user -> id
                     ]
@@ -394,59 +397,37 @@ class UsuarioController extends \yii\web\Controller
     }
 
 
-    private function verifyExpiredToken() {     	
-
-        // Obtiene el token del usuario
-        $token = $this->access_token;     
-        
-            // Obtiene las 3 partes del token en un array
-        $tokenParts = explode(".", $token);    
-        
-        // Verifica si en token consta de 3 partes (si es un jwt) 	
-        if(count($tokenParts)==3){         
-        // Desencripta la parte del payload	
-        $tokenPayload = base64_decode($tokenParts[1]);  
-        // Obtenemos el payload como objeto       	
-        $jwtPayload = json_decode($tokenPayload);         
-        // Verificamos la vigencia del token	
-        return time() > $jwtPayload->exp;     	
-        } else {         	
-        return true;     	
-        } 	
-    }
-
-    public function actionGetTokenJwt()
+    public function actionGetTokenJwt($data)
     {
-        $jwt = Yii::$app->jwt;
-		$signer = $jwt->getSigner('HS256');
-		$key = $jwt->getKey();
-		$time = time();
+        $key = 'example_key';
+        $payload = [
+            'id' => $data -> id,
+            'name' => $data -> given_name,
+            'last_name' => $data -> family_name,
+            'email' => $data -> email,
+            'exp' => time() + 43200
+        ];
+        $jwt = JWT::encode($payload, $key, 'HS256');       
+        
+        $cookie_name = 'jwt_token';
+        $cookie_value = $jwt;
+        $cookie_expiration = time () + 43200;
+        $cookie_secure = isset($_SERVER['HTTPS']);
+        $cookie_httponly = true;
 
-		$jwtParams = Yii::$app->params['jwt'];
-
-		return $jwt->getBuilder()
-			->issuedBy($jwtParams['issuer'])
-			->permittedFor($jwtParams['audience'])
-			->identifiedBy($jwtParams['id'], true)
-			->issuedAt($time)
-			->expiresAt($time + $jwtParams['expire'])
-			//->withClaim('uid', $user->userID)
-			->getToken($signer, $key);
-    
+        // Configurar la cookie
+        setcookie(
+            $cookie_name,
+            $cookie_value,
+            $cookie_expiration,
+            '/',
+            '', // Dominio (dejar en blanco para el dominio actual)
+            $cookie_secure,
+            $cookie_httponly
+        );
+        return $jwt;
     }
 
-    public function actionTest($token){
-        return $this -> getInfoUser($token);
-    }
-
-    /* Login
-       1. Search el correo  
-        1.1. Si ya existe el correo validar contrasenia, devolver el token y name del servicio google
-
-       2. Si no existe el correo crear, correo y id crear token.
-        2.1 Devolver token y name del servicio
-
-    */
     private static function getInfoUser($token){
         $uri = Yii::$app->params['apiGoogle'];
         $url = $uri.'?access_token='. $token;
