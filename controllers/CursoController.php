@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\Clase;
 use app\models\Curso;
+use app\models\Professor;
 use Exception;
 use Yii;
 use yii\data\Pagination;
@@ -248,13 +249,17 @@ class CursoController extends \yii\web\Controller
                             ])
                             ->asArray()
                             ->all();
-            
+
+            $course = Curso::findOne($idCourse);
+            $teacher = Professor::findOne($course -> professor_id);
+                        
             $response = [
                 'success' => true,
                 'message' => 'Lista de Cursos',
                 'data' => [
                     'course' => $course,
-                    'classes' => $classes
+                    'classes' => $classes,
+                    'professor' => $teacher
                 ] 
             ];
         }else{

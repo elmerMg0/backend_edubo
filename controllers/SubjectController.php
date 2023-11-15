@@ -3,10 +3,15 @@
 namespace app\controllers;
 
 use app\models\Avance;
+use app\models\Curso;
+use app\models\Professor;
 use app\models\Subject;
 use app\models\SubjectLikes;
 use Exception;
 use Yii;
+use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Signer\Hmac\Sha256;
 
 class SubjectController extends \yii\web\Controller
 {
@@ -70,7 +75,7 @@ class SubjectController extends \yii\web\Controller
                             ->innerJoin('curso', 'curso.id = clase.curso_id')
                             ->where(['curso.id' => $idCourse, 'numero_clase' => $nroClass, 'subject.slug' => $slugSubject])
                             ->one();
-
+     
         $views = 0;
         $likes = 0;
         if($subject){
@@ -108,20 +113,27 @@ class SubjectController extends \yii\web\Controller
         $record = SubjectLikes::find()->where(['subject_id' => $idSubject, 'estudiante_id' => $idStudent])->one(); 
         if($record){
             try{
-                if($record -> detete()){
-                    
-                }else{
-                    return 1;
-                }
+                $record -> delete();
+                $response = [
+                    'success' => true,
+                    'message' => 'Deleted register'
+                ];
             }catch( Exception $e){
-                
-                return $e;
-            }
+                $response = [
+                    'success' => true,
+                    'message' => 'Ocurrio un error'
+                ];
+            } 
         }else{
             $record = new SubjectLikes();
             $record -> subject_id = $idSubject;
             $record -> estudiante_id = $idStudent;
             $record -> save();
+            $response = [
+                'success' => true,
+                'message' => 'Register created'
+            ];
         }
+        return $response;
     }
 }
