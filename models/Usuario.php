@@ -42,12 +42,13 @@ class Usuario extends \yii\db\ActiveRecord
     {
         return [
             [['nombre', 'apellido', 'email', 'access_token', 'plan_id'], 'required'],
+            [['access_token'], 'string'],
             [['plan_id', 'puntos'], 'default', 'value' => null],
             [['plan_id', 'puntos'], 'integer'],
             [['create_ts', 'update_ts'], 'safe'],
             [['nombre'], 'string', 'max' => 50],
             [['apellido'], 'string', 'max' => 80],
-            [['email', 'password_hash', 'access_token'], 'string', 'max' => 250],
+            [['email', 'password_hash'], 'string', 'max' => 250],
         ];
     }
 
@@ -77,7 +78,7 @@ class Usuario extends \yii\db\ActiveRecord
      */
     public function getAvances()
     {
-        return $this->hasMany(Avance::class, ['estudiante_id' => 'id']);
+        return $this->hasMany(Avance::class, ['usuario_id' => 'id']);
     }
 
     /**
@@ -87,7 +88,7 @@ class Usuario extends \yii\db\ActiveRecord
      */
     public function getInscripcions()
     {
-        return $this->hasMany(Inscripcion::class, ['estudiante_id' => 'id']);
+        return $this->hasMany(Inscripcion::class, ['usuario_id' => 'id']);
     }
 
     /**
@@ -97,7 +98,7 @@ class Usuario extends \yii\db\ActiveRecord
      */
     public function getResultados()
     {
-        return $this->hasMany(Resultado::class, ['estudiante_id' => 'id']);
+        return $this->hasMany(Resultado::class, ['usuario_id' => 'id']);
     }
 
     /**
@@ -107,7 +108,7 @@ class Usuario extends \yii\db\ActiveRecord
      */
     public function getSubjectLikes()
     {
-        return $this->hasMany(SubjectLikes::class, ['estudiante_id' => 'id']);
+        return $this->hasMany(SubjectLikes::class, ['usuario_id' => 'id']);
     }
 
     /**
@@ -117,7 +118,7 @@ class Usuario extends \yii\db\ActiveRecord
      */
     public function getSubjects()
     {
-        return $this->hasMany(Subject::class, ['id' => 'subject_id'])->viaTable('avance', ['estudiante_id' => 'id']);
+        return $this->hasMany(Subject::class, ['id' => 'subject_id'])->viaTable('avance', ['usuario_id' => 'id']);
     }
 
     /**
@@ -127,6 +128,6 @@ class Usuario extends \yii\db\ActiveRecord
      */
     public function getSubjects0()
     {
-        return $this->hasMany(Subject::class, ['id' => 'subject_id'])->viaTable('subject_likes', ['estudiante_id' => 'id']);
+        return $this->hasMany(Subject::class, ['id' => 'subject_id'])->viaTable('subject_likes', ['usuario_id' => 'id']);
     }
 }
