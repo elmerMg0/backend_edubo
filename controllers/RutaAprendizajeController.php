@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\Curso;
 use app\models\RutaAprendizaje;
 use Exception;
 use Yii;
@@ -196,15 +197,20 @@ class RutaAprendizajeController extends \yii\web\Controller
 
     public function actionGetRoadsWithCourses($idRoad){
         $idRoad = isset($idRoad) ? $idRoad : null;
-        $courses = RutaAprendizaje::find()
+        /* $courses = RutaAprendizaje::find()
                             ->andFilterWhere(['id' => $idRoad])
                             ->with('cursos')
                             ->asArray()
-                            ->all();                    
+                            ->all();         */  
+        $courses = Curso::find()->where(['ruta_aprendizaje_id' => $idRoad])->all();
+        $path = RutaAprendizaje::findOne($idRoad);          
         $response = [
             'success' => true,
             'message' => 'Lista de cursos por ruta de aprendizaje',
-            'courses' => $courses 
+            'data' => [
+                'courses' => $courses,
+                'pathInfo' => $path
+            ] 
         ];
         return $response;
     }
