@@ -307,6 +307,36 @@ class UsuarioController extends \yii\web\Controller
         return $response;
     }
 
+    public function actionLoginUser(){
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $email = $params['email'];
+        $user = Usuario::find()-> where(['email' => $email]) -> one();
+        $auth = Yii::$app-> authManager;
+        if( $user ){
+            $password = $params['password'];
+            if(Yii::$app->security->validatePassword($password, $user->password_hash)){
+                $role = $auth->getRolesByUser($user -> id);
+                $response = [
+                    'success' => true,
+                    'message' => 'Inicio de sesion correcto',
+                    'accessToken' => $user -> access_token,
+                    'role' => $role,
+                    'id' => $user -> id
+                ];
+            }else{
+                $response = [
+                    'success' => false,
+                    'message' => 'Usuario o contraseñia incorrectos!',
+                ];
+            }
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'Usuario o contraseñia incorrectos!'
+            ];
+        }
+        return $response;
+    }
 
     private function actionCreateUserWithExternalService($data){
         //$params = Yii::$app->getRequest()->getBodyParams();
