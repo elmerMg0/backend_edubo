@@ -14,15 +14,35 @@ $config = [
     'components' => [
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
-            'cookieValidationKey' => 'C44NKA-usl1tOddDVaPd7Qjp2YDI6L-2',
+            'cookieValidationKey' => '2sEuheh_1miiDXvQMKGXSsXvhhmU3k9W',
+            'parsers' => [             	
+                'application/json' => 'yii\web\JsonParser',    
+                'multipart/form-data' => 'yii\web\MultipartFormDataParser'   
+                ],
+                
+        ],
+        'response' => [
+            'format' => yii\web\Response::FORMAT_JSON,
+            'charset' => 'UTF-8',
+            'on beforeSend' => function ($event) {   
+                header("Access-Control-Allow-Origin: *");
+                header("Access-Control-Allow-Methods: *");
+                header("Access-Control-Allow-Headers: *");
+                header("Access-Control-Allow-Credentials: true");
+                header("Access-Control-Request-Headers: *");
+                header("Access-Control-Expose-Headers: *");
+                header("Access-Control-Max-Age: 3600");
+            },
         ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],
-        'user' => [
-            'identityClass' => 'app\models\User',
-            'enableAutoLogin' => true,
-        ],
+        'user' => [         	
+            'identityClass' => 'app\models\User',         	
+            'enableAutoLogin' => true,         	
+            'enableSession' => false,         	
+            'loginUrl' => null     	
+        ],            
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
@@ -42,14 +62,18 @@ $config = [
             ],
         ],
         'db' => $db,
-        /*
+        
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
             ],
         ],
-        */
+        'authManager' => [
+            'class' => 'yii\rbac\DbManager',
+        ],
+
+       
     ],
     'params' => $params,
 ];

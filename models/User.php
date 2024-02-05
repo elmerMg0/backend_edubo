@@ -2,38 +2,27 @@
 
 namespace app\models;
 
-class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
+use Firebase\JWT\ExpiredException;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use Yii;
+
+class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
 {
-    public $id;
-    public $username;
-    public $password;
-    public $authKey;
-    public $accessToken;
 
-    private static $users = [
-        '100' => [
-            'id' => '100',
-            'username' => 'admin',
-            'password' => 'admin',
-            'authKey' => 'test100key',
-            'accessToken' => '100-token',
-        ],
-        '101' => [
-            'id' => '101',
-            'username' => 'demo',
-            'password' => 'demo',
-            'authKey' => 'test101key',
-            'accessToken' => '101-token',
-        ],
-    ];
 
+    public static function tableName()	
+    {    	
+        return 'usuario';	
+    }
+    
 
     /**
      * {@inheritdoc}
      */
     public static function findIdentity($id)
     {
-        return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
+        return  null;
     }
 
     /**
@@ -41,14 +30,36 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public static function findIdentityByAccessToken($token, $type = null)
     {
-        foreach (self::$users as $user) {
-            if ($user['accessToken'] === $token) {
-                return new static($user);
-            }
-        }
-
-        return null;
+        $user = User::findOne(['access_token' => $token]);     	
+        if ($user) {         	
+            if (!$user->verifyExpiredToken()) {             	
+                $user->access_token = null;             	
+                return new static($user);         	
+             }     	
+        }     	
+        return null;  
     }
+
+
+    private function verifyExpiredToken() {     	
+
+        $key = Yii::$app->params['keyuser'];
+        // Obtiene el token del usuario
+        try {
+            $token = $this->access_token;     
+            $decoded = JWT::decode($token, new Key($key, 'HS256'));
+            return time() > $decoded ->exp;
+            // Token válido
+        } catch (ExpiredException $e) {
+            return [
+                'success' => false,
+                'message' => 'El token ha expirado',
+            ]   ;
+            // Token expirado, maneja la expiración aquí
+        }
+        return 1;
+    }
+        
 
     /**
      * Finds user by username
@@ -58,12 +69,6 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public static function findByUsername($username)
     {
-        foreach (self::$users as $user) {
-            if (strcasecmp($user['username'], $username) === 0) {
-                return new static($user);
-            }
-        }
-
         return null;
     }
 
