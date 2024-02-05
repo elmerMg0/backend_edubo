@@ -9,14 +9,15 @@ use Yii;
  *
  * @property int $id
  * @property string $descripcion
- * @property string $respuesta
  * @property string|null $url_image
  * @property int $clase_id
  * @property string $create_ts
  * @property string|null $update_ts
+ * @property string|null $subtitle
+ * @property bool $active
  *
  * @property Clase $clase
- * @property Resultado $resultado
+ * @property Response[] $responses
  */
 class Pregunta extends \yii\db\ActiveRecord
 {
@@ -34,13 +35,14 @@ class Pregunta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['descripcion', 'respuesta', 'clase_id'], 'required'],
+            [['descripcion', 'clase_id', 'active'], 'required'],
             [['clase_id'], 'default', 'value' => null],
             [['clase_id'], 'integer'],
             [['create_ts', 'update_ts'], 'safe'],
+            [['active'], 'boolean'],
             [['descripcion'], 'string', 'max' => 150],
-            [['respuesta'], 'string', 'max' => 80],
             [['url_image'], 'string', 'max' => 50],
+            [['subtitle'], 'string', 'max' => 250],
             [['clase_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clase::class, 'targetAttribute' => ['clase_id' => 'id']],
         ];
     }
@@ -53,11 +55,12 @@ class Pregunta extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'descripcion' => 'Descripcion',
-            'respuesta' => 'Respuesta',
             'url_image' => 'Url Image',
             'clase_id' => 'Clase ID',
             'create_ts' => 'Create Ts',
             'update_ts' => 'Update Ts',
+            'subtitle' => 'Subtitle',
+            'active' => 'Active',
         ];
     }
 
@@ -72,12 +75,12 @@ class Pregunta extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Resultado]].
+     * Gets query for [[Responses]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getResultado()
+    public function getResponses()
     {
-        return $this->hasOne(Resultado::class, ['id' => 'id']);
+        return $this->hasMany(Response::class, ['pregunta_id' => 'id']);
     }
 }

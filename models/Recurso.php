@@ -9,7 +9,6 @@ use Yii;
  *
  * @property int $id
  * @property string|null $descripcion
- * @property string|null $url_video
  * @property int $subject_id
  * @property bool $active
  * @property string|null $update_ts
@@ -33,7 +32,7 @@ class Recurso extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['descripcion', 'url_video'], 'string'],
+            [['descripcion'], 'string'],
             [['subject_id', 'active'], 'required'],
             [['subject_id'], 'default', 'value' => null],
             [['subject_id'], 'integer'],
@@ -51,7 +50,6 @@ class Recurso extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'descripcion' => 'Descripcion',
-            'url_video' => 'Url Video',
             'subject_id' => 'Subject ID',
             'active' => 'Active',
             'update_ts' => 'Update Ts',

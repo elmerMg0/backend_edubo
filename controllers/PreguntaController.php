@@ -22,14 +22,27 @@ class PreguntaController extends \yii\web\Controller
                 'create' => ['post'],
                 'update' => ['put', 'post'],
                 'delete' => ['delete'],
-                'get-category' => ['get'],
-
+                'get-questions' => ['get'],
+                'get-questions-by-class' => ['get'],
+                'questions' => ['get'],
             ]
         ];
-        /* $behaviors['authenticator'] = [         	
-            'class' => \yii\filters\auth\HttpBearerAuth::class,         	
-            'except' => ['options']     	
-        ]; */
+        $behaviors['authenticator'] = [
+            'class' => \yii\filters\auth\HttpBearerAuth::class,
+            'except' => ['options']
+        ];
+        $behaviors['access'] = [
+            'class' => \yii\filters\AccessControl::class,
+            'only' => ['index', 'get-questions', 'create', 'update', 'get-questions-by-class', 'questions'], // acciones a las que se aplicará el control
+            'except' => [''],    // acciones a las que no se aplicará el control
+            'rules' => [
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['index', 'get-questions', 'create', 'update', 'get-questions-by-class', 'questions'], // acciones que siguen esta regla
+                    'roles' => ['manager'] // control por roles  permisos
+                ],
+            ],
+        ];
         return $behaviors;
     }
 
@@ -45,11 +58,11 @@ class PreguntaController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($name, $pageSize=5)
-    {   
-        if($name === 'undefined')$name = null;
+    public function actionIndex($name, $pageSize = 5)
+    {
+        if ($name === 'undefined') $name = null;
         $query = Pregunta::find()
-                    ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
+            ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -74,25 +87,26 @@ class PreguntaController extends \yii\web\Controller
                 'page' => $currentPage,
                 'start' => $pagination->getOffset(),
                 'totalPages' => $totalPages,
-                'questions' => $questions
-            ]
+            ],
+            'questions' => $questions
         ];
         return $response;
     }
 
-    public function actionGetQuestions () {
+    public function actionGetQuestions()
+    {
         $questions = Pregunta::find()
-                      ->where(['estado' => 'Activo'])
-                      ->orderBy(['id' => 'SORT_ASC'])             
-                      ->all();
+            ->where(['estado' => 'Activo'])
+            ->orderBy(['id' => 'SORT_ASC'])
+            ->all();
 
-        if($questions){
+        if ($questions) {
             $response = [
                 'success' => true,
                 'message' => 'Lista de preguntas',
                 'questions' => $questions,
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'No existen preguntas',
@@ -105,19 +119,19 @@ class PreguntaController extends \yii\web\Controller
 
     public function actionCreate()
     {
-   
+
         $question = new Pregunta();
         $file = UploadedFile::getInstanceByName('file');
         $data = Json::decode(Yii::$app->request->post('data'));
 
         // $data = Json::decode(Yii::$app->request->post('data'));
-        if($file){
+        if ($file) {
             $fileName = uniqid() . '.' . $file->getExtension();
             $file->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
             $question->url_image = $fileName;
         }
         try {
-        $question->load($data, '');
+            $question->load($data, '');
 
             if ($question->save()) {
                 Yii::$app->getResponse()->setStatusCode(201);
@@ -127,7 +141,7 @@ class PreguntaController extends \yii\web\Controller
                     'fileName' => $question
                 ];
             } else {
-                Yii::$app->getResponse()->setStatusCode(422,"Data Validation Failed.");
+                Yii::$app->getResponse()->setStatusCode(422, "Data Validation Failed.");
                 $response = [
                     'success' => false,
                     'message' => 'Existen errores en los campos',
@@ -158,16 +172,16 @@ class PreguntaController extends \yii\web\Controller
             if ($image) {
                 $url_image = $question->url_image;
                 $imageOld = Yii::getAlias('@app/web/upload/' . $url_image);
-                if(file_exists($imageOld) && $url_image){
+                if (file_exists($imageOld) && $url_image) {
                     unlink($imageOld);
                     /* Eliminar */
                 }
-                $fileName = uniqid().'.'.$image->getExtension();
+                $fileName = uniqid() . '.' . $image->getExtension();
                 $image->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
                 $imageNew = Yii::getAlias('@app/web/upload/' . $fileName);
-                if(file_exists($imageNew)){
-                    $question -> url_image = $fileName;
-                }else{
+                if (file_exists($imageNew)) {
+                    $question->url_image = $fileName;
+                } else {
                     return $response = [
                         'success' => false,
                         'message' => 'Ocurrio un error!',
@@ -210,81 +224,20 @@ class PreguntaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetCategory($idQuestion)
+    public function actionGetQuestionsByClass($idClass)
     {
-        $question = Pregunta::findOne($idQuestion);
-        if ($question) {
-            $response = [
-                'success' => true,
-                'message' => 'Accion realizada correctamente',
-                'category' => $question
-            ];
-        } else {
-            Yii::$app->getResponse()->setStatusCode(404);
-            $response = [
-                'success' => false,
-                'message' => 'No existe la pregunta',
-                'category' => $question
-            ];
-        }
-        return $response;
-    }
-
-   /*  public function actionDelete($idCategory)
-    {
-        $category = Pregutna::findOne($idCategory);
-
-        if ($category) {
-            try {
-                $url_image = $category->url_image;
-                $category->delete();
-                $pathFile = Yii::getAlias('@webroot/upload/'.$url_image);
-                if( file_exists($pathFile)){
-                    unlink($pathFile);
-                }
-                $response = [
-                    "success" => true,
-                    "message" => "Categoria eliminado correctamente",
-                    "category" => $category
-                ];
-            } catch (yii\db\IntegrityException $ie) {
-                Yii::$app->getResponse()->setStatusCode(409, "");
-                $response = [
-                    "success" => false,
-                    "message" =>  "El Categoria esta siendo usado",
-                    "code" => $ie->getCode()
-                ];
-            } catch (\Exception $e) {
-                Yii::$app->getResponse()->setStatusCode(422, "");
-                $response = [
-                    "success" => false,
-                    "message" => $e->getMessage(),
-                    "code" => $e->getCode()
-                ];
-            }
-        } else {
-            Yii::$app->getResponse()->setStatusCode(404);
-            $response = [
-                "success" => false,
-                "message" => "Categoria no encontrado"
-            ];
-        }
-        return $response;
-    } */
-
-    public function actionGetQuestionsByClass($idClass){
         $class = Clase::findOne($idClass);
-        if($class){
+        if ($class) {
             $questions = Pregunta::find()
-                        ->where(['estado' => true, 'clase_id' => $idClass])
-                        ->all();
+                ->where(['estado' => true, 'clase_id' => $idClass])
+                ->all();
             $response = [
                 "success" => true,
                 "message" => "Lista de pregutnas por clase",
                 "category" => $class,
                 "products" => $questions
             ];
-        }else{
+        } else {
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 "success" => false,
@@ -294,27 +247,19 @@ class PreguntaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionDisableCategory( $idCategory ){
-        $question = Pregunta::findOne($idCategory);
-        if($question){
-            $question -> active = false;
-            if($question -> save()){
-                $response = [
-                    'success' => true,
-                    'message' => 'Pregunta actualizada'
-                ];
-            }else{
-                $response = [
-                    'success' => false,
-                    'message' => 'Ocurrio un error!'
-                ];
-            }
-        }else{
-            $response = [
-                'success' => false,
-                'message' => 'Ocurrio un error!'
-            ];
-        }
+    public function actionQuestions($idClass)
+    {
+        $questions = Pregunta::find()
+            ->where(['clase_id' => $idClass])
+            ->orderBy(['id' => SORT_DESC])
+            ->all();
+        $response = [
+            "success" => true,
+            "message" => "Lista de pregutnas por clase",
+            "data" => [
+                "questions" => $questions
+            ]
+        ];
         return $response;
     }
 }

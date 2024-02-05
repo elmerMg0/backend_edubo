@@ -5,23 +5,23 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "subject_likes".
+ * This is the model class for table "comment_likes".
  *
  * @property int $id
- * @property int $subject_id
  * @property int $usuario_id
+ * @property int $comment_id
  *
- * @property Subject $subject
+ * @property Comment $comment
  * @property Usuario $usuario
  */
-class SubjectLikes extends \yii\db\ActiveRecord
+class CommentLikes extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return 'subject_likes';
+        return 'comment_likes';
     }
 
     /**
@@ -30,11 +30,10 @@ class SubjectLikes extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['subject_id', 'usuario_id'], 'required'],
-            [['subject_id', 'usuario_id'], 'default', 'value' => null],
-            [['subject_id', 'usuario_id'], 'integer'],
-            [['subject_id', 'usuario_id'], 'unique', 'targetAttribute' => ['subject_id', 'usuario_id']],
-            [['subject_id'], 'exist', 'skipOnError' => true, 'targetClass' => Subject::class, 'targetAttribute' => ['subject_id' => 'id']],
+            [['usuario_id', 'comment_id'], 'required'],
+            [['usuario_id', 'comment_id'], 'default', 'value' => null],
+            [['usuario_id', 'comment_id'], 'integer'],
+            [['comment_id'], 'exist', 'skipOnError' => true, 'targetClass' => Comment::class, 'targetAttribute' => ['comment_id' => 'id']],
             [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
         ];
     }
@@ -46,19 +45,19 @@ class SubjectLikes extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'subject_id' => 'Subject ID',
             'usuario_id' => 'Usuario ID',
+            'comment_id' => 'Comment ID',
         ];
     }
 
     /**
-     * Gets query for [[Subject]].
+     * Gets query for [[Comment]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getSubject()
+    public function getComment()
     {
-        return $this->hasOne(Subject::class, ['id' => 'subject_id']);
+        return $this->hasOne(Comment::class, ['id' => 'comment_id']);
     }
 
     /**

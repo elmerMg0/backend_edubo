@@ -2,9 +2,9 @@
 
 return [
     'class' => 'yii\db\Connection',
-    'dsn' => 'pgsql:host=localhost;dbname=edubo',
-    'username' => 'postgres',
-    'password' => 'postgres',
+    'dsn' => 'pgsql:host=localhost;dbname=dbname',
+    'username' => 'username',
+    'password' => 'password',
     'charset' => 'utf8',
 
     // Schema cache options (for production environment)

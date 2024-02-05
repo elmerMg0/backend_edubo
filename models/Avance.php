@@ -9,12 +9,12 @@ use Yii;
  *
  * @property int $id
  * @property int $subject_id
- * @property int $estudiante_id
+ * @property int $usuario_id
  * @property string $create_ts
  * @property string|null $update_ts
  *
- * @property Estudiante $estudiante
  * @property Subject $subject
+ * @property Usuario $usuario
  */
 class Avance extends \yii\db\ActiveRecord
 {
@@ -32,12 +32,13 @@ class Avance extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['subject_id', 'estudiante_id'], 'required'],
-            [['subject_id', 'estudiante_id'], 'default', 'value' => null],
-            [['subject_id', 'estudiante_id'], 'integer'],
+            [['subject_id', 'usuario_id'], 'required'],
+            [['subject_id', 'usuario_id'], 'default', 'value' => null],
+            [['subject_id', 'usuario_id'], 'integer'],
             [['create_ts', 'update_ts'], 'safe'],
-            [['estudiante_id'], 'exist', 'skipOnError' => true, 'targetClass' => Estudiante::class, 'targetAttribute' => ['estudiante_id' => 'id']],
+            [['subject_id', 'usuario_id'], 'unique', 'targetAttribute' => ['subject_id', 'usuario_id']],
             [['subject_id'], 'exist', 'skipOnError' => true, 'targetClass' => Subject::class, 'targetAttribute' => ['subject_id' => 'id']],
+            [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
         ];
     }
 
@@ -49,20 +50,10 @@ class Avance extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'subject_id' => 'Subject ID',
-            'estudiante_id' => 'Estudiante ID',
+            'usuario_id' => 'Usuario ID',
             'create_ts' => 'Create Ts',
             'update_ts' => 'Update Ts',
         ];
-    }
-
-    /**
-     * Gets query for [[Estudiante]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getEstudiante()
-    {
-        return $this->hasOne(Estudiante::class, ['id' => 'estudiante_id']);
     }
 
     /**
@@ -73,5 +64,15 @@ class Avance extends \yii\db\ActiveRecord
     public function getSubject()
     {
         return $this->hasOne(Subject::class, ['id' => 'subject_id']);
+    }
+
+    /**
+     * Gets query for [[Usuario]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUsuario()
+    {
+        return $this->hasOne(Usuario::class, ['id' => 'usuario_id']);
     }
 }

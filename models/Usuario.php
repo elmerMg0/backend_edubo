@@ -17,10 +17,11 @@ use Yii;
  * @property string $create_ts
  * @property string|null $update_ts
  * @property int $puntos
+ * @property string|null $url_image
  *
  * @property Avance[] $avances
+ * @property Comment[] $comments
  * @property Inscripcion[] $inscripcions
- * @property Resultado[] $resultados
  * @property SubjectLikes[] $subjectLikes
  * @property Subject[] $subjects
  * @property Subject[] $subjects0
@@ -46,7 +47,7 @@ class Usuario extends \yii\db\ActiveRecord
             [['plan_id', 'puntos'], 'default', 'value' => null],
             [['plan_id', 'puntos'], 'integer'],
             [['create_ts', 'update_ts'], 'safe'],
-            [['nombre'], 'string', 'max' => 50],
+            [['nombre', 'url_image'], 'string', 'max' => 50],
             [['apellido'], 'string', 'max' => 80],
             [['email', 'password_hash'], 'string', 'max' => 250],
         ];
@@ -68,6 +69,7 @@ class Usuario extends \yii\db\ActiveRecord
             'create_ts' => 'Create Ts',
             'update_ts' => 'Update Ts',
             'puntos' => 'Puntos',
+            'url_image' => 'Url Image',
         ];
     }
 
@@ -82,6 +84,16 @@ class Usuario extends \yii\db\ActiveRecord
     }
 
     /**
+     * Gets query for [[Comments]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getComments()
+    {
+        return $this->hasMany(Comment::class, ['usuario_id' => 'id']);
+    }
+
+    /**
      * Gets query for [[Inscripcions]].
      *
      * @return \yii\db\ActiveQuery
@@ -89,16 +101,6 @@ class Usuario extends \yii\db\ActiveRecord
     public function getInscripcions()
     {
         return $this->hasMany(Inscripcion::class, ['usuario_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Resultados]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getResultados()
-    {
-        return $this->hasMany(Resultado::class, ['usuario_id' => 'id']);
     }
 
     /**

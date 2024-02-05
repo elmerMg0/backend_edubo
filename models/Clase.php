@@ -17,8 +17,9 @@ use Yii;
  * @property string|null $update_ts
  * @property string $create_ts
  * @property bool|null $is_public
+ * @property string|null $slug
+ * @property string|null $type
  *
- * @property Avance[] $avances
  * @property Curso $curso
  * @property Pregunta[] $preguntas
  * @property Subject[] $subjects
@@ -47,6 +48,8 @@ class Clase extends \yii\db\ActiveRecord
             [['titulo'], 'string', 'max' => 50],
             [['descripcion'], 'string', 'max' => 80],
             [['duracion'], 'string', 'max' => 10],
+            [['slug'], 'string', 'max' => 20],
+            [['type'], 'string', 'max' => 15],
             [['curso_id'], 'exist', 'skipOnError' => true, 'targetClass' => Curso::class, 'targetAttribute' => ['curso_id' => 'id']],
         ];
     }
@@ -67,17 +70,9 @@ class Clase extends \yii\db\ActiveRecord
             'update_ts' => 'Update Ts',
             'create_ts' => 'Create Ts',
             'is_public' => 'Is Public',
+            'slug' => 'Slug',
+            'type' => 'Type',
         ];
-    }
-
-    /**
-     * Gets query for [[Avances]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getAvances()
-    {
-        return $this->hasMany(Avance::class, ['clase_id' => 'id']);
     }
 
     /**
