@@ -13,6 +13,7 @@ use Yii;
  * @property string $lastname
  * @property string|null $nickname
  * @property string|null $url_image
+ * @property bool|null $active
  *
  * @property Curso[] $cursos
  */
@@ -33,6 +34,7 @@ class Professor extends \yii\db\ActiveRecord
     {
         return [
             [['biography', 'firstname', 'lastname'], 'required'],
+            [['active'], 'boolean'],
             [['biography'], 'string', 'max' => 100],
             [['firstname', 'lastname', 'url_image'], 'string', 'max' => 50],
             [['nickname'], 'string', 'max' => 30],
@@ -51,6 +53,7 @@ class Professor extends \yii\db\ActiveRecord
             'lastname' => 'Lastname',
             'nickname' => 'Nickname',
             'url_image' => 'Url Image',
+            'active' => 'Active',
         ];
     }
 

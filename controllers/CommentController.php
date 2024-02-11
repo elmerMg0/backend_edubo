@@ -103,73 +103,7 @@ class CommentController extends \yii\web\Controller
     {
     }
 
-    public function actionGetComments($idSubject, $idStudent)
-    {
-        $comments = Comment::find()
-            ->select(['comment.num_comments', 'usuario.nombre as name', 'usuario.apellido as lastName', 'usuario.url_image as avatar', 'comment.id', 'comment.comment_text', 'comment.num_likes'])
-            ->innerJoin('usuario', 'usuario.id = comment.usuario_id')
-            ->where(['subject_id' => $idSubject, 'comment.comment_id' => null])
-            ->with(['comments' => function ($query) {
-                $query
-                    ->select(['comment.num_likes', 'comment.comment_text', 'comment.id', 'comment.comment_id', 'usuario.nombre as name', 'usuario.apellido as lastName', 'usuario.url_image as avatar'])
-                    ->innerJoin('usuario', 'usuario.id = comment.usuario_id')
-                    ->orderBy(['num_likes' => SORT_DESC])
-                    ->asArray();
-            }])
-            //->with('comments')
-            ->orderBy(['num_likes' => SORT_DESC])
-            ->asArray()
-            ->all();
+   
 
-        /* Likes que se hizo en los comentarios de la subclase por el student */
-        $commentLikesList = CommentLikes::find()
-            ->select(['comment_likes.comment_id as comment_id'])
-            ->innerJoin('comment', 'comment.id = comment_likes.comment_id')
-            ->where(['comment.subject_id' => $idSubject, 'comment_likes.usuario_id' => $idStudent])
-            ->all();
-        $response = [
-            'success' => true,
-            'message' => 'Comentarios obtenidos',
-            'data' => [
-                'comments' => $comments,
-                'commentLikesList' => $commentLikesList
-            ]
-        ];
-
-        return $response;
-    }
-
-    public function actionUpdateLikes($idComment, $idStudent)
-    {
-        $record = CommentLikes::find()->where(['comment_id' => $idComment, 'usuario_id' => $idStudent])->one();
-        $comment = Comment::find()->where(['id' => $idComment])->one();
-        if ($record) {
-            try {
-                $comment->num_likes = $comment->num_likes - 1;
-                $record->delete();
-                $comment->save();
-                $response = [
-                    'success' => true,
-                    'message' => 'Deleted register'
-                ];
-            } catch (Exception $e) {
-                $response = [
-                    'success' => true,
-                    'message' => 'Ocurrio un error'
-                ];
-            }
-        } else {
-            $record = new CommentLikes();
-            $record->comment_id = $idComment;
-            $record->usuario_id = $idStudent;
-            $record->save();
-            $comment->num_likes = $comment->num_likes + 1;
-            $comment->save();
-            $response = [
-                'success' => true,
-                'message' => 'Register created'
-            ];
-        }
-        return $response;
-    }
+   
 }

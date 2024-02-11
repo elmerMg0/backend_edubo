@@ -260,44 +260,7 @@ class RutaAprendizajeController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetRoadsWithCourses($idRoad)
-    {
-        $idRoad = isset($idRoad) ? $idRoad : null;
-        $courses = Curso::find()
-            ->select(['curso.*', 'professor.nickname as professor'])
-            ->innerJoin('professor', 'curso.professor_id = professor.id')
-            ->where(['ruta_aprendizaje_id' => $idRoad, 'active' => true])
-            ->asArray()
-            ->orderBy(['id' => SORT_DESC])
-            ->all();
-        $path = RutaAprendizaje::findOne($idRoad);
-        $response = [
-            'success' => true,
-            'message' => 'Lista de cursos por ruta de aprendizaje',
-            'data' => [
-                'courses' => $courses,
-                'pathInfo' => $path
-            ]
-        ];
-        return $response;
-    }
+  
 
-    public function actionGetRoads($idRoad)
-    {
-        $idRoad = isset($idRoad) ? $idRoad : null;
-        $courses = RutaAprendizaje::find()
-            ->andFilterWhere(['id' => $idRoad])
-            ->with('cursos')
-            ->asArray()
-            ->all();
-        $response = [
-            'success' => true,
-            'message' => 'Lista de cursos por ruta de aprendizaje',
-            'data' => [
-                'courses' => $courses
-            ]
-        ];
-
-        return $response;
-    }
+   
 }

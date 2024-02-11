@@ -27,14 +27,14 @@ class SubjectController extends \yii\web\Controller
                 'subjects' => ['GET'],
             ]
         ];
-        $behaviors['authenticator'] = [
+      /*   $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
             'except' => ['options']
-        ];
+        ]; */
 
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['get-subject', 'create', 'update', 'update-likes', 'quiz', 'subjects'], // acciones a las que se aplicará el control
+            'only' => ['', 'create', 'update', 'update-likes', 'quiz', ''], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
@@ -139,34 +139,7 @@ class SubjectController extends \yii\web\Controller
     }
 
 
-    public function actionUpdateLikes($idSubject, $idStudent)
-    {
-        $record = SubjectLikes::find()->where(['subject_id' => $idSubject, 'usuario_id' => $idStudent])->one();
-        if ($record) {
-            try {
-                $record->delete();
-                $response = [
-                    'success' => true,
-                    'message' => 'Deleted register'
-                ];
-            } catch (Exception $e) {
-                $response = [
-                    'success' => true,
-                    'message' => 'Ocurrio un error'
-                ];
-            }
-        } else {
-            $record = new SubjectLikes();
-            $record->subject_id = $idSubject;
-            $record->usuario_id = $idStudent;
-            $record->save();
-            $response = [
-                'success' => true,
-                'message' => 'Register created'
-            ];
-        }
-        return $response;
-    }
+  
 
     /* get subject by id clase */
 
