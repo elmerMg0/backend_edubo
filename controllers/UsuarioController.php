@@ -29,13 +29,13 @@ class UsuarioController extends \yii\web\Controller
 
         $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
-            'except' => ['options', 'login-user', 'get-role']
+            'except' => ['options', 'login-user', 'get-role', 'login']
         ];
 
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
             'only' => ['index', 'create-user', 'edit-user', 'get-all-users'], // acciones a las que se aplicará el control
-            'except' => ['login-user'],    // acciones a las que no se aplicará el control
+            'except' => ['login-user', 'login'],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido

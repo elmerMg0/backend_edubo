@@ -2,11 +2,9 @@
 
 namespace app\controllers;
 
-use app\models\Avance;
 use app\models\Clase;
 use app\models\Pregunta;
 use app\models\Recurso;
-use app\models\SubjectLikes;
 use Exception;
 use Yii;
 use yii\data\Pagination;
@@ -276,55 +274,9 @@ class ClaseController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetClassProgress($idCourse, $idStudent, $slugSubject, $nroClase)
-    {
-        $progress = Avance::find()
-            ->select(['subject_id'])
-            ->innerJoin('subject', 'subject.id = avance.subject_id')
-            ->innerJoin('clase', 'clase.id = subject.clase_id')
-            ->innerJoin('curso', 'curso.id = clase.curso_id')
-            ->where(['curso.id' => $idCourse, 'usuario_id' => $idStudent])
-            ->all();
+    
 
-        $subjectLike = SubjectLikes::find()
-            ->select(['subject_id'])
-            ->innerJoin('subject', 'subject.id = subject_likes.subject_id')
-            ->innerJoin('clase', 'clase.id = subject.clase_id')
-            ->innerJoin('curso', 'curso.id = clase.curso_id')
-            ->where([
-                'curso.id' => $idCourse, 'usuario_id' => $idStudent, 'subject.slug' => $slugSubject,
-                'clase.numero_clase' => $nroClase
-            ])
-            ->one();
-        $isLiked = ($subjectLike) ? true : false;
-        $response = [
-            'success' => true,
-            'message' => 'Informacion',
-            'data' => [
-                'progress' => $progress,
-                'isLiked' => $isLiked
-            ]
-        ];
-        return $response;
-    }
 
-    public function actionUpdateProgress($idSubject, $idStudent)
-    {
-
-        $newProgress = new Avance();
-        $newProgress->subject_id = $idSubject;
-        $newProgress->usuario_id = $idStudent;
-        try {
-            if ($newProgress->save()) {
-                return $newProgress;
-            } else {
-                return $newProgress->errors;
-            }
-        } catch (Exception $e) {
-            return $e;
-        }
-        return $newProgress;
-    }
 
     public function actionClasses($idCourse)
     {

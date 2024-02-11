@@ -4,7 +4,6 @@ namespace app\controllers;
 
 use app\models\Clase;
 use app\models\Curso;
-use app\models\Professor;
 use Exception;
 use Yii;
 use yii\data\Pagination;
@@ -269,46 +268,7 @@ class CursoController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionCourse($idCourse)
-    {
-        $course = Curso::find()
-            ->select(['curso.*'])
-            ->where(['id' => $idCourse])
-            ->one();
-        if ($course) {
-
-            $classes = Clase::find()
-                ->where(['curso_id' => $idCourse, 'active' => true])
-                ->with([
-                    'subjects' => function ($query) {
-                        $query->select(['subject.*']) // Select only 'id' and 'nombre'
-                            ->orderBy(['slug' => SORT_ASC]); // Order by 'nombre' in ascending order
-                    }
-                ])
-                ->asArray()
-                ->orderBy(['numero_clase' => SORT_ASC])
-                ->all();
-
-            //$course = Curso::findOne($idCourse);
-            $teacher = Professor::findOne($course->professor_id);
-
-            $response = [
-                'success' => true,
-                'message' => 'Lista de Cursos',
-                'data' => [
-                    'course' => $course,
-                    'classes' => $classes,
-                    'professor' => $teacher
-                ]
-            ];
-        } else {
-            $response = [
-                'success' => false,
-                'message' => 'Cursos no encontrados'
-            ];
-        }
-        return $response;
-    }
+   
 
     public function actionCoursesByRoad($idRoad)
     {
