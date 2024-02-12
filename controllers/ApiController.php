@@ -101,7 +101,7 @@ class ApiController extends \yii\web\Controller
         $courses = Curso::find()
             ->select(['curso.*', 'professor.nickname as professor'])
             ->innerJoin('professor', 'curso.professor_id = professor.id')
-            ->where(['ruta_aprendizaje_id' => $idRoad, 'active' => true])
+            ->where(['ruta_aprendizaje_id' => $idRoad, 'curso.active' => true])
             ->asArray()
             ->orderBy(['id' => SORT_DESC])
             ->all();
