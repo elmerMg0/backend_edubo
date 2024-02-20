@@ -7,7 +7,9 @@ use app\models\Clase;
 use app\models\Comment;
 use app\models\CommentLikes;
 use app\models\Curso;
+use app\models\Pregunta;
 use app\models\Professor;
+use app\models\Response;
 use app\models\RutaAprendizaje;
 use app\models\SubjectLikes;
 use Exception;
@@ -129,7 +131,7 @@ class ApiController extends \yii\web\Controller
                 ->where(['curso_id' => $idCourse, 'active' => true])
                 ->with([
                     'subjects' => function ($query) {
-                        $query->select(['subject.title', 'subject.slug', 'subject.id', 'subject.clase_id', 'subject.duration'])
+                        $query->select(['subject.title', 'subject.slug', 'subject.id', 'subject.clase_id', 'subject.duration', 'subject.type'])
                             ->orderBy(['slug' => SORT_ASC]); 
                     }
                 ])
@@ -305,4 +307,56 @@ class ApiController extends \yii\web\Controller
         }
         return $response;
     }
+
+    public function actionQuiz($idCourse, $nroClass)
+    {
+        $class = Clase::find()
+            ->innerJoin('curso', 'curso.id = clase.curso_id')
+            ->where(['curso.id' => $idCourse, 'numero_clase' => $nroClass])
+            ->one();
+
+        $questions = Pregunta::find()
+            ->where(['clase_id' => $class->id])
+            ->with(['responses' => function ($query) {
+                $query
+                    ->select(['response.description', 'response.id', 'response.pregunta_id', 'response.slug'])
+                    ->orderBy(['response.slug' => SORT_ASC]);
+            }])
+            ->asArray()
+            ->all();
+        $response = [
+            'success' => true,
+            'message' => 'Lista de Cursos',
+            'data' => [
+                'classe' =>  $class,
+                'questions' => $questions,
+            ]
+        ];
+
+        return $response;
+    }
+
+    public function actionCheck($idResponse)
+    {
+        $answer = Response::findOne($idResponse);
+        $answerCorrect = $answer->description;
+        if (!$answer->is_correct) {
+            $answerCorrect = Response::find()
+                ->where(['pregunta_id' => $answer->pregunta_id])
+                ->andWhere(['is_correct' => true])
+                ->one();
+            $answerCorrect = $answerCorrect->description;
+        }
+
+        $response = [
+            "success" => true,
+            "message" => "Respuesta",
+            "data" => [
+                "is_correct" => $answer->is_correct ? true : false,
+                'answer' => $answerCorrect
+            ]
+        ];
+        return $response;
+    }
 }
+

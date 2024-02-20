@@ -110,36 +110,6 @@ class SubjectController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionQuiz($idCourse, $nroClass)
-    {
-        $class = Clase::find()
-            ->innerJoin('curso', 'curso.id = clase.curso_id')
-            ->where(['curso.id' => $idCourse, 'numero_clase' => $nroClass])
-            ->one();
-
-        $questions = Pregunta::find()
-            ->where(['clase_id' => $class->id])
-            ->with(['responses' => function ($query) {
-                $query
-                    ->select(['response.description', 'response.id', 'response.pregunta_id', 'response.slug'])
-                    ->orderBy(['response.slug' => SORT_ASC]);
-            }])
-            ->asArray()
-            ->all();
-        $response = [
-            'success' => true,
-            'message' => 'Lista de Cursos',
-            'data' => [
-                'classe' =>  $class,
-                'questions' => $questions,
-            ]
-        ];
-
-        return $response;
-    }
-
-
-  
 
     /* get subject by id clase */
 

@@ -181,26 +181,4 @@ class ResponseController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionCheck($idResponse)
-    {
-        $answer = Response::findOne($idResponse);
-        $answerCorrect = $answer->description;
-        if (!$answer->is_correct) {
-            $answerCorrect = Response::find()
-                ->where(['pregunta_id' => $answer->pregunta_id])
-                ->andWhere(['is_correct' => true])
-                ->one();
-            $answerCorrect = $answerCorrect->description;
-        }
-
-        $response = [
-            "success" => true,
-            "message" => "Respuesta",
-            "data" => [
-                "is_correct" => $answer->is_correct ? true : false,
-                'answer' => $answerCorrect
-            ]
-        ];
-        return $response;
-    }
 }
