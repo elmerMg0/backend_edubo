@@ -24,18 +24,19 @@ class UsuarioController extends \yii\web\Controller
                 'edit-user' => ['POST'],
                 'get-all-users' => ['GET'],
                 'login-user' => ['POST'],
+                'register' => ['POST']
             ]
         ];
 
         $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
-            'except' => ['options', 'login-user', 'get-role', 'login']
+            'except' => ['options', 'login-user', 'get-role', 'login', 'register']
         ];
 
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
             'only' => ['index', 'create-user', 'edit-user', 'get-all-users'], // acciones a las que se aplicará el control
-            'except' => ['login-user', 'login'],    // acciones a las que no se aplicará el control
+            'except' => ['login-user', 'login', 'register'],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
@@ -371,6 +372,9 @@ class UsuarioController extends \yii\web\Controller
         $user->puntos = 20;
         if ($user->save()) {
             Yii::$app->getResponse()->getStatusCode(201);
+            $auth = Yii::$app->authManager;
+            $role = $auth->getRole($data['tipo']);
+            $auth -> assign($role, $user -> id);
             $response = [
                 'success' => true,
                 'message' => 'Login exitoso',
@@ -451,11 +455,11 @@ class UsuarioController extends \yii\web\Controller
 
     public function actionGetTokenJwt($data)
     {
-        $key = 'example_key';
+        $key = Yii::$app->params['keyuser'];
         $payload = [
-            'id' => $data->id,
-            'name' => $data->given_name,
-            'last_name' => $data->family_name,
+           /*  'id' => $data->id, */
+            'name' => isset($data->given_name) ? $data->given_name : $data->firstName,
+            'last_name' => isset( $data->family_name) ? $data->family_name : $data->lastName,
             'email' => $data->email,
             'exp' => time() + 43200
         ];
@@ -496,6 +500,42 @@ class UsuarioController extends \yii\web\Controller
             die('Error');
         }
         $response = json_decode($res);
+        return $response;
+    }
+
+    public function actionRegister(){
+        $data = Yii::$app -> getRequest() -> getBodyParams();
+        $data = json_decode(json_encode($data));
+        $user = new Usuario();
+        $user->nombre = $data->firstName;
+        $user->apellido = $data->lastName;
+        $user->email = $data->email;
+        $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data->password);
+        $user->access_token = $this->actionGetTokenJwt($data);
+        $user->plan_id = 1;
+        $user->puntos = 20;
+        if ($user->save()) {
+               /* AGREGAR ROLE USER */ 
+               $auth = Yii::$app->authManager;
+               $role = $auth->getRole($data['tipo']);
+               $auth -> assign($role, $user -> id);
+               Yii::$app->getResponse()->getStatusCode(201);
+            $response = [
+                'success' => true,
+                'message' => 'Login exitoso',
+                'data' => [
+                    'accessToken' => $user->access_token,
+                    'id' => $user->id
+                ]
+            ];
+        } else {
+            Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
+            $response = [
+                'success' => false,
+                'message' => 'Parametros incorrectos',
+                'usuario' => $user->errors,
+            ];
+        }
         return $response;
     }
 }
