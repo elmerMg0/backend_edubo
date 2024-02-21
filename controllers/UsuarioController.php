@@ -292,6 +292,8 @@ class UsuarioController extends \yii\web\Controller
             /*The user is register  */
             $password = $infomationUser->id;
             if (Yii::$app->security->validatePassword($password, $user->password_hash)) {
+                $user->access_token = $this->actionGetTokenJwt($user, $user -> nombre, $user -> apellido);
+                $user -> save();
                 $response = [
                     'success' => true,
                     'message' => 'Login exitoso',
@@ -367,7 +369,7 @@ class UsuarioController extends \yii\web\Controller
         $user->apellido = $data->family_name;
         $user->email = $data->email;
         $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data->id);
-        $user->access_token = $this->actionGetTokenJwt($data);
+        $user->access_token = $this->actionGetTokenJwt($data , $data -> given_name, $data -> family_name);
         $user->plan_id = 1;
         $user->puntos = 20;
         if ($user->save()) {
@@ -453,13 +455,13 @@ class UsuarioController extends \yii\web\Controller
     }
 
 
-    public function actionGetTokenJwt($data)
+    public function actionGetTokenJwt($data, $name, $lastname)
     {
         $key = Yii::$app->params['keyuser'];
         $payload = [
            /*  'id' => $data->id, */
-            'name' => isset($data->given_name) ? $data->given_name : $data->firstName,
-            'last_name' => isset( $data->family_name) ? $data->family_name : $data->lastName,
+            'name' => $name,
+            'last_name' => $lastname,
             'email' => $data->email,
             'exp' => time() + 43200
         ];
@@ -511,7 +513,7 @@ class UsuarioController extends \yii\web\Controller
         $user->apellido = $data->lastName;
         $user->email = $data->email;
         $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data->password);
-        $user->access_token = $this->actionGetTokenJwt($data);
+        $user->access_token = $this->actionGetTokenJwt($data, $data -> firstName, $data -> lastName );
         $user->plan_id = 1;
         $user->puntos = 20;
         if ($user->save()) {
