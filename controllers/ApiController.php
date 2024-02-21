@@ -23,21 +23,24 @@ class ApiController extends \yii\web\Controller
         $behaviors['verbs'] = [
             'class' => \yii\filters\VerbFilter::class,
             'actions' => [
-                'classes' => ['GET'],
-                'create' => ['POST'],
-                'update' => ['POST'],
-                'disable-class' => ['GET'],
-                'get-class-with-questions' => ['GET'],
-                'get-class-with-resources' => ['GET'],
-                'get-class-progress' => ['GET'],
+                'learning-paths' => ['GET'],
+                'get-roads' => ['GET'],
+                'get-roads-with-courses' => ['GET'],
+                'course' => ['GET'],
+                'update-progress' => ['GET'],
+                'get-comments' => ['GET'],
+                'update-likes' => ['GET'],
+                'update-likes-sub' => ['GET'],
+                'quiz' => ['GET'],
+                'check' => ['GET'],
             ]
         ];
-       /*  $behaviors['authenticator'] = [
+         $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
-            'except' => ['options']
+            'except' => ['options', 'learning-paths']
         ];
 
-        $behaviors['access'] = [
+        /* $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
             'only' => ['classes', 'create', 'disable-class', 'update', 'get-class-with-questions', 'get-class-with-resources', 'get-class-progress'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
