@@ -5,28 +5,27 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "inscripcion".
+ * This is the model class for table "road_user".
  *
  * @property int $id
- * @property int $curso_id
  * @property int $usuario_id
- * @property string $fecha_inscripcion
- * @property bool $aprobado
+ * @property int $ruta_aprendizaje
+ * @property string $create_ts
  * @property int $plan_id
  * @property string $expire_date
  *
- * @property Curso $curso
  * @property Plan $plan
+ * @property RutaAprendizaje $rutaAprendizaje
  * @property Usuario $usuario
  */
-class Inscripcion extends \yii\db\ActiveRecord
+class RoadUser extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return 'inscripcion';
+        return 'road_user';
     }
 
     /**
@@ -35,13 +34,12 @@ class Inscripcion extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['curso_id', 'usuario_id', 'plan_id', 'expire_date'], 'required'],
-            [['curso_id', 'usuario_id', 'plan_id'], 'default', 'value' => null],
-            [['curso_id', 'usuario_id', 'plan_id'], 'integer'],
-            [['fecha_inscripcion', 'expire_date'], 'safe'],
-            [['aprobado'], 'boolean'],
-            [['curso_id'], 'exist', 'skipOnError' => true, 'targetClass' => Curso::class, 'targetAttribute' => ['curso_id' => 'id']],
+            [['usuario_id', 'ruta_aprendizaje', 'plan_id', 'expire_date'], 'required'],
+            [['usuario_id', 'ruta_aprendizaje', 'plan_id'], 'default', 'value' => null],
+            [['usuario_id', 'ruta_aprendizaje', 'plan_id'], 'integer'],
+            [['create_ts', 'expire_date'], 'safe'],
             [['plan_id'], 'exist', 'skipOnError' => true, 'targetClass' => Plan::class, 'targetAttribute' => ['plan_id' => 'id']],
+            [['ruta_aprendizaje'], 'exist', 'skipOnError' => true, 'targetClass' => RutaAprendizaje::class, 'targetAttribute' => ['ruta_aprendizaje' => 'id']],
             [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
         ];
     }
@@ -53,23 +51,12 @@ class Inscripcion extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'curso_id' => 'Curso ID',
             'usuario_id' => 'Usuario ID',
-            'fecha_inscripcion' => 'Fecha Inscripcion',
-            'aprobado' => 'Aprobado',
+            'ruta_aprendizaje' => 'Ruta Aprendizaje',
+            'create_ts' => 'Create Ts',
             'plan_id' => 'Plan ID',
             'expire_date' => 'Expire Date',
         ];
-    }
-
-    /**
-     * Gets query for [[Curso]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getCurso()
-    {
-        return $this->hasOne(Curso::class, ['id' => 'curso_id']);
     }
 
     /**
@@ -80,6 +67,16 @@ class Inscripcion extends \yii\db\ActiveRecord
     public function getPlan()
     {
         return $this->hasOne(Plan::class, ['id' => 'plan_id']);
+    }
+
+    /**
+     * Gets query for [[RutaAprendizaje]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getRutaAprendizaje()
+    {
+        return $this->hasOne(RutaAprendizaje::class, ['id' => 'ruta_aprendizaje']);
     }
 
     /**
