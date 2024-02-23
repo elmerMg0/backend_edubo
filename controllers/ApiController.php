@@ -7,9 +7,12 @@ use app\models\Clase;
 use app\models\Comment;
 use app\models\CommentLikes;
 use app\models\Curso;
+use app\models\Inscripcion;
+use app\models\Plan;
 use app\models\Pregunta;
 use app\models\Professor;
 use app\models\Response;
+use app\models\RoadPlan;
 use app\models\RutaAprendizaje;
 use app\models\SubjectLikes;
 use Exception;
@@ -37,7 +40,7 @@ class ApiController extends \yii\web\Controller
         ];
          $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
-            'except' => ['options', 'learning-paths']
+            'except' => ['options', 'learning-paths', 'plans']
         ];
 
         /* $behaviors['access'] = [
@@ -360,6 +363,36 @@ class ApiController extends \yii\web\Controller
             ]
         ];
         return $response;
+    }
+
+    public function actionPlans($idRoad, $idCourse){
+        $plansCourse = [];
+        if($idCourse){
+            $plansCourse = Plan::find()
+                                ->where(['course_id' => $idCourse])
+                                ->innerJoin('course_plan', 'plan.id =  course_plan.plan_id')
+                                ->all();
+            $course = Curso::findOne($idCourse);
+            $idRoad = $course -> ruta_aprendizaje_id;
+        }
+
+        $plansRoad = Plan::find()
+                        ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion', 'plan.benefit'])
+                        ->innerJoin('road_plan', 'plan.id = road_plan.plan_id')
+                        ->where(['ruta_aprendizaje_id' => $idRoad, 'plan.active' => true])
+                        ->all();
+        $path = RutaAprendizaje::findOne($idRoad);
+
+        $response = [
+            'success' => true,
+            'message' => 'List of plans',
+            "data" => [
+                "plansRoad" => $plansRoad,
+                'path' => $path,
+                'plansCourse' => $plansCourse
+            ]
+        ];
+        return $response;                 
     }
 }
 
