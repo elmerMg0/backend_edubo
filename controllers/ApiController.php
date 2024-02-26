@@ -12,11 +12,13 @@ use app\models\Plan;
 use app\models\Pregunta;
 use app\models\Professor;
 use app\models\Response;
-use app\models\RoadPlan;
+use app\models\RoadUser;
 use app\models\RutaAprendizaje;
 use app\models\SubjectLikes;
 use Exception;
 use Yii;
+use DateInterval;
+use DateTime;
 
 class ApiController extends \yii\web\Controller
 {
@@ -369,17 +371,20 @@ class ApiController extends \yii\web\Controller
         $plansCourse = [];
         if($idCourse){
             $plansCourse = Plan::find()
+                                ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion', 'plan.benefit', 'course_plan.course_id'])
                                 ->where(['course_id' => $idCourse])
                                 ->innerJoin('course_plan', 'plan.id =  course_plan.plan_id')
+                                ->asArray()
                                 ->all();
             $course = Curso::findOne($idCourse);
             $idRoad = $course -> ruta_aprendizaje_id;
         }
 
         $plansRoad = Plan::find()
-                        ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion', 'plan.benefit'])
+                        ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion', 'plan.benefit', 'road_plan.ruta_aprendizaje_id'])
                         ->innerJoin('road_plan', 'plan.id = road_plan.plan_id')
                         ->where(['ruta_aprendizaje_id' => $idRoad, 'plan.active' => true])
+                        ->asArray()
                         ->all();
         $path = RutaAprendizaje::findOne($idRoad);
 
@@ -394,5 +399,72 @@ class ApiController extends \yii\web\Controller
         ];
         return $response;                 
     }
+
+    public function actionEnroll(){
+        /* Plan elegido, estudiante, curso o ruta */
+        try{
+            $params = Yii::$app -> getRequest() -> getBodyParams();
+            $enrollment = $this -> enrollFactory($params['type'], $params['id']);//id can be course or path
+            $enrollment -> usuario_id = $params['student'];
+            $enrollment -> plan_id = $params['plan'];
+            $enrollment -> expire_date = $this -> incrementarMeses($params['quantity']);
+            $enrollment -> create_ts = date('Y-m-d H:i:s');
+            $enrollment -> months = $params['quantity'];
+            $enrollment -> finished = false;
+            $enrollment -> save();
+            $auth = Yii::$app->authManager;
+            $role = $auth->getRole('studentpro');
+            $auth -> assign($role, $params['student']);
+            $response = [
+                'success' => true,
+                'message' => 'Register created'
+            ];
+    
+        }catch(Exception $e){
+            $response = [
+                'success' => false,
+                'message' => 'Ocurrio un error '.$e
+            ];
+        }
+      
+        return $response;
+    }
+
+    private function incrementarMeses($n) {
+        // Crear un objeto DateTime con la fecha proporcionada
+        $fecha = new DateTime();
+    
+        // Incrementar la cantidad de meses
+        $fecha->add(new DateInterval("P{$n}M"));
+    
+        // Obtener la nueva fecha
+        $nuevoAnio = $fecha->format('Y');
+        $nuevoMes = $fecha->format('m');
+        $nuevoDia = $fecha->format('d');
+    
+        // Devolver la nueva fecha como arreglo asociativo
+      /*   return [
+            'anio' => $nuevoAnio,
+            'mes' => $nuevoMes,
+            'dia' => $nuevoDia
+        ]; */
+        return $nuevoAnio . '-' . $nuevoMes . '-' . $nuevoDia;
+    }
+ 
+    private function enrollFactory($type, $id){
+        $enrollment = null;
+        switch($type){
+            case 'course':
+                $enrollment = new Inscripcion();
+                $enrollment -> curso_id = $id;
+                break;
+            case 'path':
+                $enrollment = new RoadUser();
+                $enrollment -> ruta_aprendizaje_id = $id;
+                break;
+        }
+        return $enrollment;
+    }
+
 }
 

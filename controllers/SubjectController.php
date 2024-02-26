@@ -3,9 +3,10 @@
 namespace app\controllers;
 
 use app\models\Avance;
-use app\models\Clase;
-use app\models\Pregunta;
+use app\models\Curso;
+use app\models\Inscripcion;
 use app\models\Recurso;
+use app\models\RoadUser;
 use app\models\Subject;
 use app\models\SubjectLikes;
 use Exception;
@@ -27,10 +28,10 @@ class SubjectController extends \yii\web\Controller
                 'subjects' => ['GET'],
             ]
         ];
-      /*   $behaviors['authenticator'] = [
+        $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
             'except' => ['options']
-        ]; */
+        ];
 
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
@@ -66,12 +67,36 @@ class SubjectController extends \yii\web\Controller
 
     public function actionGetSubject($nroClass, $slugSubject, $idCourse)
     {
+        /* Validacion ver si tiene alguna suscripcion, si la tiene validar que esa suscripcion sea activa y que la clase del curso este en esa suscripcion */
+        $role = Yii::$app->authManager->getRolesByUser(Yii::$app->user->getId());
+        
         $subject = Subject::find()
-            ->select(['subject.*'])
+            ->select(['subject.id', 'subject.slug', 'subject.is_public', 'subject.title', 'subject.clase_id', 'subject.duration', 'subject.views', 'subject.type', 'subject.video_url', 'subject.type'])
             ->innerJoin('clase', 'clase.id = subject.clase_id')
             ->innerJoin('curso', 'curso.id = clase.curso_id')
             ->where(['curso.id' => $idCourse, 'numero_clase' => $nroClass, 'subject.slug' => $slugSubject])
             ->one();
+
+        if(!$subject -> is_public){
+            if($role && count($role) > 1 && $role['studentpro']){
+                /* Tiene suscripcion si, validar que la clase del curso este en esa suscripcion */
+                    $course = Curso::findOne($idCourse);
+                    $isEnrolledPath = RoadUser::find()
+                        ->where(['ruta_aprendizaje_id' => $course -> ruta_aprendizaje_id,'finished' => false ,'usuario_id' => Yii::$app->user->getId()])
+                        ->exists();
+                    
+                    $isEnrolledCourse = Inscripcion::find()
+                        ->where(['curso_id' => $idCourse,'finished' => false ,'usuario_id' => Yii::$app->user->getId()])
+                        ->exists();
+
+                    if($isEnrolledPath || $isEnrolledCourse){
+                    }else{
+                        $subject -> video_url = null;
+                    }
+            }else{
+                $subject -> video_url = null;
+            }
+        }
 
         $resource = Recurso::find()
             ->select(['recurso.descripcion', 'recurso.id'])
