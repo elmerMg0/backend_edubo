@@ -10,10 +10,12 @@ use Yii;
  * @property int $id
  * @property int $curso_id
  * @property int $usuario_id
- * @property string $fecha_inscripcion
+ * @property string $create_ts
  * @property bool $aprobado
  * @property int $plan_id
  * @property string $expire_date
+ * @property int $months
+ * @property bool $finished
  *
  * @property Curso $curso
  * @property Plan $plan
@@ -35,11 +37,11 @@ class Inscripcion extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['curso_id', 'usuario_id', 'plan_id', 'expire_date'], 'required'],
-            [['curso_id', 'usuario_id', 'plan_id'], 'default', 'value' => null],
-            [['curso_id', 'usuario_id', 'plan_id'], 'integer'],
-            [['fecha_inscripcion', 'expire_date'], 'safe'],
-            [['aprobado'], 'boolean'],
+            [['curso_id', 'usuario_id', 'plan_id', 'expire_date', 'months', 'finished'], 'required'],
+            [['curso_id', 'usuario_id', 'plan_id', 'months'], 'default', 'value' => null],
+            [['curso_id', 'usuario_id', 'plan_id', 'months'], 'integer'],
+            [['create_ts', 'expire_date'], 'safe'],
+            [['aprobado', 'finished'], 'boolean'],
             [['curso_id'], 'exist', 'skipOnError' => true, 'targetClass' => Curso::class, 'targetAttribute' => ['curso_id' => 'id']],
             [['plan_id'], 'exist', 'skipOnError' => true, 'targetClass' => Plan::class, 'targetAttribute' => ['plan_id' => 'id']],
             [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
@@ -55,10 +57,12 @@ class Inscripcion extends \yii\db\ActiveRecord
             'id' => 'ID',
             'curso_id' => 'Curso ID',
             'usuario_id' => 'Usuario ID',
-            'fecha_inscripcion' => 'Fecha Inscripcion',
+            'create_ts' => 'Create Ts',
             'aprobado' => 'Aprobado',
             'plan_id' => 'Plan ID',
             'expire_date' => 'Expire Date',
+            'months' => 'Months',
+            'finished' => 'Finished',
         ];
     }
 

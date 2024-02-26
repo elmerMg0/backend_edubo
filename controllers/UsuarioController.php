@@ -294,12 +294,15 @@ class UsuarioController extends \yii\web\Controller
             if (Yii::$app->security->validatePassword($password, $user->password_hash)) {
                 $user->access_token = $this->actionGetTokenJwt($user, $user -> nombre, $user -> apellido);
                 $user -> save();
+
+                $role = Yii::$app->authManager->getRolesByUser($user->id);
                 $response = [
                     'success' => true,
                     'message' => 'Login exitoso',
                     'data' => [
                         'accessToken' => $user->access_token,
-                        'id' => $user->id
+                        'id' => $user->id,
+                        'subscribed' => count($role) === 2 ? true : false
                     ]
                 ];
             } else {
@@ -527,7 +530,8 @@ class UsuarioController extends \yii\web\Controller
                 'message' => 'Login exitoso',
                 'data' => [
                     'accessToken' => $user->access_token,
-                    'id' => $user->id
+                    'id' => $user->id,
+                    'subscribed' => false
                 ]
             ];
         } else {

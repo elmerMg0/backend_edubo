@@ -9,10 +9,12 @@ use Yii;
  *
  * @property int $id
  * @property int $usuario_id
- * @property int $ruta_aprendizaje
+ * @property int $ruta_aprendizaje_id
  * @property string $create_ts
  * @property int $plan_id
  * @property string $expire_date
+ * @property int $months
+ * @property bool $finished
  *
  * @property Plan $plan
  * @property RutaAprendizaje $rutaAprendizaje
@@ -34,12 +36,13 @@ class RoadUser extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['usuario_id', 'ruta_aprendizaje', 'plan_id', 'expire_date'], 'required'],
-            [['usuario_id', 'ruta_aprendizaje', 'plan_id'], 'default', 'value' => null],
-            [['usuario_id', 'ruta_aprendizaje', 'plan_id'], 'integer'],
+            [['usuario_id', 'ruta_aprendizaje_id', 'plan_id', 'expire_date', 'months'], 'required'],
+            [['usuario_id', 'ruta_aprendizaje_id', 'plan_id', 'months'], 'default', 'value' => null],
+            [['usuario_id', 'ruta_aprendizaje_id', 'plan_id', 'months'], 'integer'],
             [['create_ts', 'expire_date'], 'safe'],
+            [['finished'], 'boolean'],
             [['plan_id'], 'exist', 'skipOnError' => true, 'targetClass' => Plan::class, 'targetAttribute' => ['plan_id' => 'id']],
-            [['ruta_aprendizaje'], 'exist', 'skipOnError' => true, 'targetClass' => RutaAprendizaje::class, 'targetAttribute' => ['ruta_aprendizaje' => 'id']],
+            [['ruta_aprendizaje_id'], 'exist', 'skipOnError' => true, 'targetClass' => RutaAprendizaje::class, 'targetAttribute' => ['ruta_aprendizaje_id' => 'id']],
             [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
         ];
     }
@@ -52,10 +55,12 @@ class RoadUser extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'usuario_id' => 'Usuario ID',
-            'ruta_aprendizaje' => 'Ruta Aprendizaje',
+            'ruta_aprendizaje_id' => 'Ruta Aprendizaje ID',
             'create_ts' => 'Create Ts',
             'plan_id' => 'Plan ID',
             'expire_date' => 'Expire Date',
+            'months' => 'Months',
+            'finished' => 'Finished',
         ];
     }
 
@@ -76,7 +81,7 @@ class RoadUser extends \yii\db\ActiveRecord
      */
     public function getRutaAprendizaje()
     {
-        return $this->hasOne(RutaAprendizaje::class, ['id' => 'ruta_aprendizaje']);
+        return $this->hasOne(RutaAprendizaje::class, ['id' => 'ruta_aprendizaje_id']);
     }
 
     /**
