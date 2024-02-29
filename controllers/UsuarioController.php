@@ -302,7 +302,8 @@ class UsuarioController extends \yii\web\Controller
                     'data' => [
                         'accessToken' => $user->access_token,
                         'id' => $user->id,
-                        'subscribed' => count($role) === 2 ? true : false
+                        'subscribed' => count($role) === 2 ? true : false,
+                        'image' => $user->url_image
                     ]
                 ];
             } else {
@@ -347,7 +348,8 @@ class UsuarioController extends \yii\web\Controller
                     'message' => 'Inicio de sesion correcto',
                     'accessToken' => $jwt,
                     'role' => $role,
-                    'id' => $user->id
+                    'id' => $user->id,
+                    'image' => $user->url_image
                 ];
             } else {
                 $response = [
@@ -371,6 +373,7 @@ class UsuarioController extends \yii\web\Controller
         $user->nombre = $data->given_name;
         $user->apellido = $data->family_name;
         $user->email = $data->email;
+        $user->url_image = $data->picture;
         $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data->id);
         $user->access_token = $this->actionGetTokenJwt($data , $data -> given_name, $data -> family_name);
         $user->plan_id = 1;
@@ -385,7 +388,9 @@ class UsuarioController extends \yii\web\Controller
                 'message' => 'Login exitoso',
                 'data' => [
                     'accessToken' => $user->access_token,
-                    'id' => $user->id
+                    'id' => $user->id,
+                    'subscribed' => false,
+                    'image' => $user->url_image
                 ]
             ];
         } else {
