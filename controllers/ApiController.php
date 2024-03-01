@@ -14,6 +14,7 @@ use app\models\Professor;
 use app\models\Response;
 use app\models\RoadUser;
 use app\models\RutaAprendizaje;
+use app\models\Subject;
 use app\models\SubjectLikes;
 use Exception;
 use Yii;
@@ -217,12 +218,15 @@ class ApiController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetComments($idSubject, $idStudent)
+    public function actionGetComments($idSubject, $idStudent, $nroClass)
     {
+        $subject = Subject::find()->
+                                innerJoin('clase', 'clase.id = subject.clase_id')->
+                                where(['subject.slug' => $idSubject, 'clase.numero_clase' => $nroClass]) -> one();
         $comments = Comment::find()
             ->select(['comment.num_comments', 'usuario.nombre as name', 'usuario.apellido as lastName', 'usuario.url_image as avatar', 'comment.id', 'comment.comment_text', 'comment.num_likes'])
             ->innerJoin('usuario', 'usuario.id = comment.usuario_id')
-            ->where(['subject_id' => $idSubject, 'comment.comment_id' => null])
+            ->where(['subject_id' => $subject -> id, 'comment.comment_id' => null])
             ->with(['comments' => function ($query) {
                 $query
                     ->select(['comment.num_likes', 'comment.comment_text', 'comment.id', 'comment.comment_id', 'usuario.nombre as name', 'usuario.apellido as lastName', 'usuario.url_image as avatar'])
@@ -369,6 +373,7 @@ class ApiController extends \yii\web\Controller
 
     public function actionPlans($idRoad, $idCourse){
         $plansCourse = [];
+        $course = null;
         if($idCourse){
             $plansCourse = Plan::find()
                                 ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion', 'plan.benefit', 'course_plan.course_id'])
@@ -376,7 +381,7 @@ class ApiController extends \yii\web\Controller
                                 ->innerJoin('course_plan', 'plan.id =  course_plan.plan_id')
                                 ->asArray()
                                 ->all();
-            $course = Curso::findOne($idCourse);
+            $course = Curso::find()->select(['id', 'name', 'ruta_aprendizaje_id']) -> where(['id' => $idCourse]) -> one();
             $idRoad = $course -> ruta_aprendizaje_id;
         }
 
@@ -394,6 +399,7 @@ class ApiController extends \yii\web\Controller
             "data" => [
                 "plansRoad" => $plansRoad,
                 'path' => $path,
+                'course' => $course,
                 'plansCourse' => $plansCourse
             ]
         ];
