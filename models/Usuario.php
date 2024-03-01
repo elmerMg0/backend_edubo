@@ -18,10 +18,14 @@ use Yii;
  * @property string|null $update_ts
  * @property int $puntos
  * @property string|null $url_image
+ * @property string|null $type
+ * @property bool $active
  *
  * @property Avance[] $avances
+ * @property CommentLikes[] $commentLikes
  * @property Comment[] $comments
  * @property Inscripcion[] $inscripcions
+ * @property RoadUser[] $roadUsers
  * @property SubjectLikes[] $subjectLikes
  * @property Subject[] $subjects
  * @property Subject[] $subjects0
@@ -47,9 +51,11 @@ class Usuario extends \yii\db\ActiveRecord
             [['plan_id', 'puntos'], 'default', 'value' => null],
             [['plan_id', 'puntos'], 'integer'],
             [['create_ts', 'update_ts'], 'safe'],
-            [['nombre', 'url_image'], 'string', 'max' => 50],
+            [['active'], 'boolean'],
+            [['nombre', 'type'], 'string', 'max' => 50],
             [['apellido'], 'string', 'max' => 80],
             [['email', 'password_hash'], 'string', 'max' => 250],
+            [['url_image'], 'string', 'max' => 100],
         ];
     }
 
@@ -70,6 +76,8 @@ class Usuario extends \yii\db\ActiveRecord
             'update_ts' => 'Update Ts',
             'puntos' => 'Puntos',
             'url_image' => 'Url Image',
+            'type' => 'Type',
+            'active' => 'Active',
         ];
     }
 
@@ -81,6 +89,16 @@ class Usuario extends \yii\db\ActiveRecord
     public function getAvances()
     {
         return $this->hasMany(Avance::class, ['usuario_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[CommentLikes]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCommentLikes()
+    {
+        return $this->hasMany(CommentLikes::class, ['usuario_id' => 'id']);
     }
 
     /**
@@ -101,6 +119,16 @@ class Usuario extends \yii\db\ActiveRecord
     public function getInscripcions()
     {
         return $this->hasMany(Inscripcion::class, ['usuario_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[RoadUsers]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getRoadUsers()
+    {
+        return $this->hasMany(RoadUser::class, ['usuario_id' => 'id']);
     }
 
     /**

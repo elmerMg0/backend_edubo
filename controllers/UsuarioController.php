@@ -293,7 +293,9 @@ class UsuarioController extends \yii\web\Controller
             $password = $infomationUser->id;
             if (Yii::$app->security->validatePassword($password, $user->password_hash)) {
                 $user->access_token = $this->actionGetTokenJwt($user, $user -> nombre, $user -> apellido);
-                $user -> save();
+                if(!$user -> save()){
+                    return $user -> errors;
+                }
 
                 $role = Yii::$app->authManager->getRolesByUser($user->id);
                 $response = [
