@@ -39,6 +39,7 @@ class ApiController extends \yii\web\Controller
                 'update-likes-sub' => ['GET'],
                 'quiz' => ['GET'],
                 'check' => ['GET'],
+                'create' => ['POST']
             ]
         ];
          $behaviors['authenticator'] = [
@@ -147,6 +148,19 @@ class ApiController extends \yii\web\Controller
                 ->asArray()
                 ->orderBy(['numero_clase' => SORT_ASC])
                 ->all();
+            
+            $isEnrolledPath = RoadUser::find()
+                ->where(['ruta_aprendizaje_id' => $course -> ruta_aprendizaje_id,'finished' => false ,'usuario_id' => Yii::$app->user->getId()])
+                ->exists();
+            
+            $isEnrolledCourse = Inscripcion::find()
+                ->where(['curso_id' => $idCourse,'finished' => false ,'usuario_id' => Yii::$app->user->getId()])
+                ->exists();
+
+            $subscribed = false;
+            if($isEnrolledPath || $isEnrolledCourse){
+                $subscribed = true;
+            }   
 
             //$course = Curso::findOne($idCourse);
             $teacher = Professor::findOne($course->professor_id);
@@ -157,7 +171,8 @@ class ApiController extends \yii\web\Controller
                 'data' => [
                     'course' => $course,
                     'classes' => $classes,
-                    'professor' => $teacher
+                    'professor' => $teacher,
+                    'subscribed' => $subscribed
                 ]
             ];
         } else {
@@ -471,6 +486,186 @@ class ApiController extends \yii\web\Controller
         }
         return $enrollment;
     }
+    public function actionCreate()
+    {
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $api_key = Yii::$app->params['keygpt'];
+        
+        $api_url = 'https://api.openai.com/v1/chat/completions';  
+        // Parámetros de la solicitud
+        $temperature = 0.0;
+        $max_tokens = 60;
+        $top_p = 1.0;
+        $frequency_penalty = 0.5;
+        $presence_penalty = 0.0;
+        
+        // Texto de entrada para la solicitud
+        $input_text = 'Diseña un sistema de clasificación de sentimientos para evaluar respuestas a preguntas en el área de matemáticas y ciencias. La tarea principal es determinar si el comentario es positivo, negativo o neutral. La API debe manejar consultas sobre temas específicos como álgebra, cálculo, biología, química y física.
 
+        Ten en cuenta las siguientes pautas:
+        
+        Si el mensaje contiene elogios, aprobación o expresiones positivas relacionadas con álgebra, cálculo, biología, química o física, clasifícalo como "positivo".
+        Si el mensaje tiene críticas, desaprobación o expresiones negativas relacionadas con álgebra, cálculo, biología, química o física, clasifícalo como "negativo".
+        Si el mensaje no contiene ninguna carga emocional o valoración sobre los temas mencionados, clasifícalo como "neutral".
+        Si la pregunta se refiere a temas ajenos a álgebra, cálculo, biología, química o física, clasifícalo automáticamente como "negativo".
+        Ejemplo de interacción:
+        Usuario: "Me encanta cómo resuelven ecuaciones en este sitio. ¡Son geniales!"
+        positivo
+        
+        Usuario: "No entiendo nada de química, esto es una pérdida de tiempo."
+        negativo
+        
+        Usuario: "¿Cuál es la fórmula química del agua?"
+        neutral
+        
+        Usuario: "¿Cuánto cuesta el último iPhone?"
+        negativo
+        El mensaje proporcionado por el usuario es el siguiente: '. $params['comment_text'];
+        $model = 'gpt-3.5-turbo';          
+        // Construir el cuerpo de la solicitud
+        $data = array(
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => $input_text
+                ]
+            ],
+            'temperature' => $temperature,
+            'max_tokens' => $max_tokens,
+            'top_p' => $top_p,
+            'frequency_penalty' => $frequency_penalty,
+            'presence_penalty' => $presence_penalty,
+            'model' => $model,
+        );
+
+        // Convertir los datos a formato JSON
+        $json_data = json_encode($data);
+
+        // Configurar la solicitud HTTP
+        $ch = curl_init($api_url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $api_key,
+        ));
+
+        // Configurar opciones adicionales si es necesario
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        // Ejecutar la solicitud
+        $response = curl_exec($ch);
+        $json = json_decode($response, true);
+        $responseAPi = $json['choices'][0]['message']['content']; 
+        if($responseAPi == 'negativo'){
+            return [
+                "success" => false,
+                "message" => "No se pudo enviar el comentario",
+                "comment" => $json
+            ];
+        }
+
+        $comment = new Comment();
+        $comment->load($params, "");
+        $comment_id = $params['comment_id'] ?? null;
+        if ($comment_id) {
+            $comment->comment_id = $comment_id;
+            $commentParent = Comment::findOne($comment_id);
+            $commentParent->num_comments = $commentParent->num_comments + 1;
+            $commentParent->save();
+        }
+        try {
+            $subject = Subject::find()
+                                ->where(['subject.slug' => $params['slugSubject'], 'numero_clase' => $params['nroClass'], 'curso.id' => $params['courseId']])
+                                ->innerJoin('clase', 'clase.id = subject.clase_id')
+                                ->innerJoin('curso', 'curso.id = clase.curso_id')
+                                ->one();
+            $comment -> subject_id = $subject->id;
+            if ($comment->save()) {
+                //todo ok
+                Yii::$app->getResponse()->setStatusCode(201);
+                $response = [
+                    "success" => true,
+                    "message" => "Comentario agreado exitosamente",
+                    'cliente' => $comment
+                ];
+            } else {
+                //Cuando hay error en los tipos de datos ingresados 
+                Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed');
+                $response = [
+                    "success" => false,
+                    "message" => "Existen parametros incorrectos",
+                    'errors' => $comment->errors
+                ];
+            }
+        } catch (Exception $e) {
+            //cuando no se definen bien las reglas en el modelo ocurre este error, por ejemplo required no esta en modelo y en la base de datos si, 
+            //existe incosistencia
+            $response = [
+                "success" => false,
+                "message" => "ocurrio un error",
+                'errors' => $e
+            ];
+        }
+        return $response;
+    }
+
+    public function actionRecentClass(){
+        $params = Yii::$app -> getRequest() -> getBodyParams();
+        $enrollment = RoadUser::find()->where(['usuario_id' => 10, 'finished' => false]) -> all();
+        $recentClasses = [];
+        if($enrollment){
+            foreach($enrollment as $enrollment){
+                $learningPath = RutaAprendizaje::find()->where(['id' => $enrollment->ruta_aprendizaje_id])->one();
+                $courses = Curso::find()->where(['ruta_aprendizaje_id' => $learningPath->id, 'active' => true])->all();
+                foreach($courses as $course){
+                    $infoCourse = Curso::find()
+                                    ->select(['curso.id','avance.create_ts', 'curso.url_image', 'curso.name', 'curso.slug', 'curso.id as courseId', 'clase.numero_clase', 'subject.slug as subjectSlug', 'subject.title', 'subject.thumbnailurl'])
+                                    ->where(['curso.id' => $course->id, 'avance.usuario_id' => $params['idStudent']]) 
+                                    ->innerJoin('clase', 'clase.curso_id = curso.id')
+                                    ->innerJoin('subject', 'subject.clase_id = clase.id')
+                                    ->innerJoin('avance', 'avance.subject_id = subject.id')
+                                    ->orderBy(['avance.create_ts' => SORT_DESC])
+                                    ->asArray()
+                                    ->one();
+                    if($infoCourse){
+                        $infoCourse['learningPathSlug'] = $learningPath -> id . '-' . $learningPath -> slug;
+                        $recentClasses[] = $infoCourse;
+                    }
+                }
+            }
+
+            $enrollmentCourses = Inscripcion::find()->where(['usuario_id' => 10, 'finished' => false]) -> all();
+            if($enrollmentCourses){
+                foreach($enrollmentCourses as $enrollmentCourse){
+                    $infoCourse = Curso::find()
+                    ->select(['curso.id','avance.create_ts', 'curso.url_image', 'curso.name', 'curso.slug', 'curso.id as courseId', 'clase.numero_clase', 'subject.slug as subjectSlug', 'subject.title', 'subject.thumbnailurl'])
+                    ->where(['curso.id' => $enrollmentCourse->curso_id, 'avance.usuario_id' => $params['idStudent']]) 
+                    ->innerJoin('clase', 'clase.curso_id = curso.id')
+                    ->innerJoin('subject', 'subject.clase_id = clase.id')
+                    ->innerJoin('avance', 'avance.subject_id = subject.id')
+                    ->orderBy(['avance.create_ts' => SORT_DESC])
+                    ->asArray()
+                    ->one();
+                    if($infoCourse){
+                        $infoCourse['learningPathSlug'] = $learningPath -> id . '-' . $learningPath -> slug;
+                        $recentClasses[] = $infoCourse;
+                    }
+                    $recentClasses[] = $enrollmentCourse->curso_id;
+                }
+            }
+
+        }
+       
+
+        $response = [
+            'success' => true,
+            'message' => 'Informacion',
+            'data' => [
+                'recentClasses' => $recentClasses
+            ]
+        ];
+        return $response;
+    }
 }
 

@@ -58,47 +58,7 @@ class CommentController extends \yii\web\Controller
     {
         return $this->render('index');
     }
-    public function actionCreate()
-    {
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $comment = new Comment();
-        $comment->load($params, "");
-        $comment_id = $params['comment_id'] ?? null;
-        if ($comment_id) {
-            $comment->comment_id = $comment_id;
-            $commentParent = Comment::findOne($comment_id);
-            $commentParent->num_comments = $commentParent->num_comments + 1;
-            $commentParent->save();
-        }
-        try {
-            if ($comment->save()) {
-                //todo ok
-                Yii::$app->getResponse()->setStatusCode(201);
-                $response = [
-                    "success" => true,
-                    "message" => "Comentario agreado exitosamente",
-                    'cliente' => $comment
-                ];
-            } else {
-                //Cuando hay error en los tipos de datos ingresados 
-                Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed');
-                $response = [
-                    "success" => false,
-                    "message" => "Existen parametros incorrectos",
-                    'errors' => $comment->errors
-                ];
-            }
-        } catch (Exception $e) {
-            //cuando no se definen bien las reglas en el modelo ocurre este error, por ejemplo required no esta en modelo y en la base de datos si, 
-            //existe incosistencia
-            $response = [
-                "success" => false,
-                "message" => "ocurrio un error",
-                'errors' => $e
-            ];
-        }
-        return $response;
-    }
+  
     public function actionComments()
     {
     }
