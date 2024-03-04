@@ -40,10 +40,10 @@ class Comment extends \yii\db\ActiveRecord
     {
         return [
             [['comment_text', 'usuario_id', 'subject_id', 'num_likes'], 'required'],
+            [['comment_text'], 'string'],
             [['usuario_id', 'subject_id', 'num_likes', 'num_comments', 'comment_id'], 'default', 'value' => null],
             [['usuario_id', 'subject_id', 'num_likes', 'num_comments', 'comment_id'], 'integer'],
             [['created_ts'], 'safe'],
-            [['comment_text'], 'string', 'max' => 250],
             [['state'], 'string', 'max' => 20],
             [['comment_id'], 'exist', 'skipOnError' => true, 'targetClass' => Comment::class, 'targetAttribute' => ['comment_id' => 'id']],
             [['subject_id'], 'exist', 'skipOnError' => true, 'targetClass' => Subject::class, 'targetAttribute' => ['subject_id' => 'id']],

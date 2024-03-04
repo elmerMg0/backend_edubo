@@ -16,6 +16,7 @@ use Yii;
  * @property string|null $video_url
  * @property int|null $views
  * @property string|null $type
+ * @property string|null $thumbnailurl
  *
  * @property Avance[] $avances
  * @property Clase $clase
@@ -50,7 +51,7 @@ class Subject extends \yii\db\ActiveRecord
             [['duration'], 'string'],
             [['slug'], 'string', 'max' => 10],
             [['title'], 'string', 'max' => 50],
-            [['video_url'], 'string', 'max' => 100],
+            [['video_url', 'thumbnailurl'], 'string', 'max' => 100],
             [['type'], 'string', 'max' => 15],
             [['clase_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clase::class, 'targetAttribute' => ['clase_id' => 'id']],
         ];
@@ -71,6 +72,7 @@ class Subject extends \yii\db\ActiveRecord
             'video_url' => 'Video Url',
             'views' => 'Views',
             'type' => 'Type',
+            'thumbnailurl' => 'Thumbnailurl',
         ];
     }
 

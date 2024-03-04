@@ -305,7 +305,8 @@ class UsuarioController extends \yii\web\Controller
                         'accessToken' => $user->access_token,
                         'id' => $user->id,
                         'subscribed' => count($role) === 2 ? true : false,
-                        'image' => $user->url_image
+                        'image' => $user->url_image,
+                        'name' => $user->nombre
                     ]
                 ];
             } else {
@@ -351,7 +352,8 @@ class UsuarioController extends \yii\web\Controller
                     'accessToken' => $jwt,
                     'role' => $role,
                     'id' => $user->id,
-                    'image' => $user->url_image
+                    'image' => $user->url_image,
+                    'name' => $user->nombre
                 ];
             } else {
                 $response = [
@@ -392,7 +394,8 @@ class UsuarioController extends \yii\web\Controller
                     'accessToken' => $user->access_token,
                     'id' => $user->id,
                     'subscribed' => false,
-                    'image' => $user->url_image
+                    'image' => $user->url_image,
+                    'name' => $user->nombre
                 ]
             ];
         } else {

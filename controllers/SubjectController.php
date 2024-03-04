@@ -157,12 +157,37 @@ class SubjectController extends \yii\web\Controller
         return $response;
     }
 
+    private function extractYouTubeVideoId($videoUrl) {
+        $regExp = '/^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/';
+        preg_match($regExp, $videoUrl, $matches);
+        return isset($matches[1]) ? $matches[1] : null;
+    }
+
+    private function getThumbnailUrl($urlVideo) {
+            $videoId = $this -> extractYouTubeVideoId($urlVideo);
+            $key = Yii::$app->params['keygoogle'];
+            $url = 'https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' . $videoId . '&key=' . $key;
+            $crl = curl_init($url);
+            curl_setopt($crl, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($crl, CURLOPT_HTTPHEADER, array(
+                'Content-Type: application/json',
+            ));
+            $res = curl_exec($crl);
+            curl_close($crl);
+            if (!$res) {
+                die('Error');
+            }
+            $response = json_decode($res);
+        return $response->items[0]->snippet->thumbnails->medium->url;
+    }
+    
     public function actionCreate()
     {
         $params = Yii::$app->getRequest()->getBodyParams();
         $subject = new Subject();
         $subject->load($params, "");
         try {
+            $subject -> thumbnailurl = $this -> getThumbnailUrl($subject->video_url);
             if ($subject->save()) {
                 //todo ok
                 Yii::$app->getResponse()->setStatusCode(201);
@@ -181,8 +206,6 @@ class SubjectController extends \yii\web\Controller
                 ];
             }
         } catch (Exception $e) {
-            //cuando no se definen bien las reglas en el modelo ocurre este error, por ejemplo required no esta en modelo y en la base de datos si, 
-            //existe incosistencia
             $response = [
                 "success" => false,
                 "message" => "ocurrio un error",
@@ -199,7 +222,7 @@ class SubjectController extends \yii\web\Controller
             $params = Yii::$app->getRequest()->getBodyParams();
             $subject->load($params, '');
             try {
-
+                $subject -> thumbnailurl = $this -> getThumbnailUrl($subject->video_url);   
                 if ($subject->save()) {
                     $response = [
                         'success' => true,
