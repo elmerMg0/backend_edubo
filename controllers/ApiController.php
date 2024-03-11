@@ -483,17 +483,17 @@ class ApiController extends \yii\web\Controller
             "data" => [
                 'plan' => $info,
                 'item' => $item,
-                'infonav' => $road
+                'road' => $road
             ]
         ];
 
         return $response;
     }
 
-    private function enroll(){
+    private function enroll($params){
         /* Plan elegido, estudiante, curso o ruta */
         try{
-            $params = Yii::$app -> getRequest() -> getBodyParams();
+            //$params = Yii::$app -> getRequest() -> getBodyParams();
             $enrollment = $this -> enrollFactory($params['type'], $params['id']);//id can be course or path
             $enrollment -> usuario_id = $params['student'];
             $enrollment -> plan_id = $params['plan'];
@@ -806,8 +806,8 @@ class ApiController extends \yii\web\Controller
     public function actionVerify(){
         $params = Yii::$app -> getRequest() -> getBodyParams();
         $info = $this -> verififyPayment($params['movimiento_id']);
-        if($info -> Data && $info -> Data -> estado == 'APROBADO'){
-            $this -> enroll();
+        if($info -> Data && $info -> Data -> estado == 'Completado'){
+            $this -> enroll($params);
             $response = [
                 'success' => true,
                 'message' => 'Confirmacion',
