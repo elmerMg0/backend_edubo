@@ -6,12 +6,14 @@ use app\models\Avance;
 use app\models\Clase;
 use app\models\Comment;
 use app\models\CommentLikes;
+use app\models\CoursePlan;
 use app\models\Curso;
 use app\models\Inscripcion;
 use app\models\Plan;
 use app\models\Pregunta;
 use app\models\Professor;
 use app\models\Response;
+use app\models\RoadPlan;
 use app\models\RoadUser;
 use app\models\RutaAprendizaje;
 use app\models\Subject;
@@ -118,12 +120,16 @@ class ApiController extends \yii\web\Controller
             ->orderBy(['id' => SORT_DESC])
             ->all();
         $path = RutaAprendizaje::findOne($idRoad);
+        $enrollment = RoadUser::find()
+                                ->where(['ruta_aprendizaje_id' => $idRoad, 'finished' => false, 'usuario_id' => Yii::$app->user->id])
+                                ->exists(); 
         $response = [
             'success' => true,
             'message' => 'Lista de cursos por ruta de aprendizaje',
             'data' => [
                 'courses' => $courses,
-                'pathInfo' => $path
+                'pathInfo' => $path,
+                'enrollment' => $enrollment
             ]
         ];
         return $response;
@@ -165,6 +171,24 @@ class ApiController extends \yii\web\Controller
             //$course = Curso::findOne($idCourse);
             $teacher = Professor::findOne($course->professor_id);
 
+            /* % de avance */
+            $subjestCount = Clase::find()
+                            ->where(['curso_id' => $idCourse])
+                            ->innerJoin('subject', 'subject.clase_id = clase.id')
+                            ->count('subject.id');
+
+            $progress = Avance::find()
+                            ->innerJoin('subject', 'subject.id = avance.subject_id')
+                            ->innerJoin('clase', 'clase.id = subject.clase_id')
+                            ->innerJoin('curso', 'curso.id = clase.curso_id')
+                            ->where(['curso.id' => $idCourse, 'usuario_id' => Yii::$app->user->getId()])
+                            ->count('subject.id');
+                            
+            $progressTotal = 0;
+            if($progress > 0){
+                $progressTotal = $progress / $subjestCount;
+            }
+            
             $response = [
                 'success' => true,
                 'message' => 'Lista de Cursos',
@@ -172,7 +196,8 @@ class ApiController extends \yii\web\Controller
                     'course' => $course,
                     'classes' => $classes,
                     'professor' => $teacher,
-                    'subscribed' => $subscribed
+                    'subscribed' => $subscribed,
+                    'progress' => $progressTotal
                 ]
             ];
         } else {
@@ -421,7 +446,51 @@ class ApiController extends \yii\web\Controller
         return $response;                 
     }
 
-    public function actionEnroll(){
+    public function actionPlan(){
+        //type, id can be course or path
+        $params = Yii::$app -> getRequest() -> getBodyParams();
+        $item = null;
+        $road = null;
+        if($params['type'] == 'course'){
+            $item = Curso::find()
+                            ->select(['name', 'url_image', 'id', 'informacion as descripcion', 'id'])
+                            ->where(['id' => $params['id']]) 
+                            ->one();
+            $info = CoursePlan::find()
+                            ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duration'])
+                            ->where(['course_id' => $item -> id])
+                            ->innerJoin('plan', 'plan.id =  course_plan.plan_id')
+                            ->asArray()
+                            ->one();
+            $road = RutaAprendizaje::find() -> select('id', 'nombre') -> where(['id' => $item -> ruta_aprendizaje_id]) -> one();
+        }else{
+            $item = RutaAprendizaje::find()
+                            ->select(['id', 'url_image', 'descripcion', 'numero_cursos', 'nombre'])
+                            ->where(['id' => $params['id']])
+                            ->one();
+            $info = RoadPlan::find()
+                            ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion'])
+                            ->where(['ruta_aprendizaje_id' => $item -> id])
+                            ->innerJoin('plan', 'plan.id =  road_plan.plan_id')
+                            ->asArray()
+                            ->one();
+            $road = $item;   
+        }
+
+        $response = [
+            'success' => true,
+            'message' => 'List of plans',
+            "data" => [
+                'plan' => $info,
+                'item' => $item,
+                'infonav' => $road
+            ]
+        ];
+
+        return $response;
+    }
+
+    private function enroll(){
         /* Plan elegido, estudiante, curso o ruta */
         try{
             $params = Yii::$app -> getRequest() -> getBodyParams();
@@ -665,6 +734,121 @@ class ApiController extends \yii\web\Controller
                 'recentClasses' => $recentClasses
             ]
         ];
+        return $response;
+    }
+
+    public function actionPaymentQr(){
+        $params = Yii::$app -> getRequest() -> getBodyParams();
+        if($params['type'] == 'course'){
+            $plan = CoursePlan::find()
+                        ->innerJoin('plan', 'plan.id = course_plan.plan_id')
+                        ->where(['course_plan.course_id' => $params['id']])
+                        ->one();
+        }else{
+            $plan = RoadPlan::find()
+                        ->select(['plan.precio_total'])
+                        ->innerJoin('plan', 'plan.id = road_plan.plan_id')
+                        ->where(['ruta_aprendizaje_id' => $params['id']])
+                        ->asArray()
+                        ->one();
+        }
+        $quantity = $plan['precio_total'] * $params['quantity'];
+        try{
+            $qr = $this -> getQr($quantity);
+            $response = [
+                'success' => true,
+                'message' => 'Informacion',
+                'data' => [
+                    'qr' => $qr -> Data
+                ]
+                ];
+        }catch (Exception $e){
+            $response = [
+                'success' => false,
+                'message' => 'Ocurrio un error',
+            ];
+        }
+        return $response;
+    }
+
+    private static function getQr($amount)
+    {
+    
+        $key = Yii::$app->params['secret_key'];
+        $username = Yii::$app->params['username_qr'];
+        $pwd = Yii::$app->params['password_qr'];
+        $url = 'https://veripagos.com/api/bcp/generar-qr';
+        $data = [
+            'secret_key' => $key,
+            'monto' => $amount,
+            'data' => [],
+            'vigencia' => '1/00:05'
+        ];
+        $post_data = json_encode($data);
+        $crl = curl_init($url);
+        curl_setopt($crl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($crl, CURLINFO_HEADER_OUT, true);
+        curl_setopt($crl, CURLOPT_POST, true);
+        curl_setopt($crl, CURLOPT_POSTFIELDS, $post_data);
+        curl_setopt($crl, CURLOPT_HTTPHEADER, array(
+            'Authorization: Basic ' . base64_encode($username . ':' . $pwd),
+            'Content-Type: application/json',
+        ));
+        $res = curl_exec($crl);
+        curl_close($crl);
+        if (!$res) {
+            die('Error');
+        }
+        $response = json_decode($res);
+        return $response;
+    }
+
+    public function actionVerify(){
+        $params = Yii::$app -> getRequest() -> getBodyParams();
+        $info = $this -> verififyPayment($params['movimiento_id']);
+        if($info -> Data && $info -> Data -> estado == 'APROBADO'){
+            $this -> enroll();
+            $response = [
+                'success' => true,
+                'message' => 'Confirmacion',
+            ];
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No se pudo confirmar el pago',
+                ];
+        }
+        return $response;
+    }
+
+
+    private static function verififyPayment($amount)
+    {
+    
+        $key = Yii::$app->params['secret_key'];
+        $username = Yii::$app->params['username_qr'];
+        $pwd = Yii::$app->params['password_qr'];
+        $url = 'https://veripagos.com/api/bcp/verificar-estado-qr';
+        $data = [
+            'secret_key' => $key,
+            'movimiento_id' => $amount,
+        ];
+        $post_data = json_encode($data);
+        $crl = curl_init($url);
+        curl_setopt($crl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($crl, CURLINFO_HEADER_OUT, true);
+        curl_setopt($crl, CURLOPT_POST, true);
+        curl_setopt($crl, CURLOPT_POSTFIELDS, $post_data);
+        curl_setopt($crl, CURLOPT_HTTPHEADER, array(
+            'Authorization: Basic ' . base64_encode($username . ':' . $pwd),
+            'Content-Type: application/json',
+        ));
+        $res = curl_exec($crl);
+        curl_close($crl);
+        if (!$res) {
+            die('Error');
+        }
+        $response = json_decode($res);
         return $response;
     }
 }
