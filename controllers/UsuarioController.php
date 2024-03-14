@@ -287,7 +287,7 @@ class UsuarioController extends \yii\web\Controller
         $user = Usuario::find()->where(['email' => $infomationUser->email])->one();
 
         if (!$user) {
-            $response = $this->actionCreateUserWithExternalService($infomationUser);
+            $response = $this->actionCreateUserWithExternalService($infomationUser, $params['type']);
         } else {
             /*The user is register  */
             $password = $infomationUser->id;
@@ -370,7 +370,7 @@ class UsuarioController extends \yii\web\Controller
         return $response;
     }
 
-    private function actionCreateUserWithExternalService($data)
+    private function actionCreateUserWithExternalService($data, $type)
     {
         //$params = Yii::$app->getRequest()->getBodyParams();
         $user = new Usuario();
@@ -385,7 +385,7 @@ class UsuarioController extends \yii\web\Controller
         if ($user->save()) {
             Yii::$app->getResponse()->getStatusCode(201);
             $auth = Yii::$app->authManager;
-            $role = $auth->getRole($data['tipo']);
+            $role = $auth->getRole($type);
             $auth -> assign($role, $user -> id);
             $response = [
                 'success' => true,
@@ -519,7 +519,17 @@ class UsuarioController extends \yii\web\Controller
     }
 
     public function actionRegister(){
+        /* Validar correo electrónico */
         $data = Yii::$app -> getRequest() -> getBodyParams();
+        $email = Usuario::find()->where(['email' => $data['email']])->exists();
+        if ($email) {
+            return [
+                'success' => false,
+                'message' => 'El correo ya existe',
+                'data' => []
+            ];
+        }
+
         $data = json_decode(json_encode($data));
         $user = new Usuario();
         $user->nombre = $data->firstName;

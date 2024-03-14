@@ -453,11 +453,11 @@ class ApiController extends \yii\web\Controller
         $road = null;
         if($params['type'] == 'course'){
             $item = Curso::find()
-                            ->select(['name', 'url_image', 'id', 'informacion as descripcion', 'id'])
+                            ->select(['name', 'url_image', 'id', 'subtitle', 'id'])
                             ->where(['id' => $params['id']]) 
                             ->one();
             $info = CoursePlan::find()
-                            ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duration'])
+                            ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion'])
                             ->where(['course_id' => $item -> id])
                             ->innerJoin('plan', 'plan.id =  course_plan.plan_id')
                             ->asArray()
@@ -492,8 +492,8 @@ class ApiController extends \yii\web\Controller
 
     private function enroll($params){
         /* Plan elegido, estudiante, curso o ruta */
+        /* Validar que si ya tiene un plan activo no se pueda inscribir */
         try{
-            //$params = Yii::$app -> getRequest() -> getBodyParams();
             $enrollment = $this -> enrollFactory($params['type'], $params['id']);//id can be course or path
             $enrollment -> usuario_id = $params['student'];
             $enrollment -> plan_id = $params['plan'];
@@ -741,8 +741,10 @@ class ApiController extends \yii\web\Controller
         $params = Yii::$app -> getRequest() -> getBodyParams();
         if($params['type'] == 'course'){
             $plan = CoursePlan::find()
+                        ->select(['plan.precio_total'])
                         ->innerJoin('plan', 'plan.id = course_plan.plan_id')
-                        ->where(['course_plan.course_id' => $params['id']])
+                        ->where(['course_id' =>  $params['id']])
+                        ->asArray()
                         ->one();
         }else{
             $plan = RoadPlan::find()
