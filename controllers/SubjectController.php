@@ -187,8 +187,8 @@ class SubjectController extends \yii\web\Controller
         $subject = new Subject();
         $subject->load($params, "");
         try {
-            $subject -> thumbnailurl = $this -> getThumbnailUrl($subject->video_url);
-            if ($subject->save()) {
+            if($params['type'] === 'video') $subject -> thumbnailurl = $this -> getThumbnailUrl($subject->video_url);
+            if ($subject->save()){
                 //todo ok
                 Yii::$app->getResponse()->setStatusCode(201);
                 $response = [

@@ -134,6 +134,26 @@ class ApiController extends \yii\web\Controller
         ];
         return $response;
     }
+    public function actionCourseSample($idCourse){
+        $course = Curso::find()
+            ->select(['name', 'you_learn', 'id', 'url_image', 'ruta_aprendizaje_id'])
+            ->where(['id' => $idCourse])
+            ->one();
+        $path = RutaAprendizaje::find()
+                                ->select(['numero_cursos', 'id', 'nombre', 'url_image'])
+                                ->where([ 'id' => $course -> ruta_aprendizaje_id])
+                                ->one();
+        $response = [
+            'success' => true,
+            'message' => 'Curso y ruta de aprendizaje',
+            'data' => [
+                'course' =>  $course,
+                'path' => $path
+            ]
+        ];
+        return $response;
+
+    }
 
     public function actionCourse($idCourse)
     {
@@ -186,6 +206,7 @@ class ApiController extends \yii\web\Controller
                             
             $progressTotal = 0;
             if($progress > 0){
+                $subjestCount = $subjestCount - count($classes);
                 $progressTotal = $progress / $subjestCount;
             }
             
