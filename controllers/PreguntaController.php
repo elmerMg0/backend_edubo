@@ -132,7 +132,6 @@ class PreguntaController extends \yii\web\Controller
         }
         try {
             $question->load($data, '');
-
             if ($question->save()) {
                 Yii::$app->getResponse()->setStatusCode(201);
                 $response = [
@@ -251,6 +250,21 @@ class PreguntaController extends \yii\web\Controller
     {
         $questions = Pregunta::find()
             ->where(['clase_id' => $idClass])
+            ->orderBy(['id' => SORT_DESC])
+            ->all();
+        $response = [
+            "success" => true,
+            "message" => "Lista de pregutnas por clase",
+            "data" => [
+                "questions" => $questions
+            ]
+        ];
+        return $response;
+    }
+
+    public function actionQuestionsByCourse($idCourse){
+        $questions = Pregunta::find()
+            ->where(['curso_id' => $idCourse])
             ->orderBy(['id' => SORT_DESC])
             ->all();
         $response = [

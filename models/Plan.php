@@ -8,13 +8,14 @@ use Yii;
  * This is the model class for table "plan".
  *
  * @property string $nombre
- * @property int $precio_mes
+ * @property int|null $precio_mes
  * @property bool $active
  * @property int $precio_total
  * @property int $id
  * @property string|null $duracion
  * @property string|null $benefit
  *
+ * @property CoursePlan[] $coursePlans
  * @property Inscripcion[] $inscripcions
  * @property RoadPlan[] $roadPlans
  * @property RoadUser[] $roadUsers
@@ -35,7 +36,7 @@ class Plan extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['nombre', 'precio_mes', 'active', 'precio_total'], 'required'],
+            [['nombre', 'active', 'precio_total'], 'required'],
             [['precio_mes', 'precio_total'], 'default', 'value' => null],
             [['precio_mes', 'precio_total'], 'integer'],
             [['active'], 'boolean'],
@@ -59,6 +60,16 @@ class Plan extends \yii\db\ActiveRecord
             'duracion' => 'Duracion',
             'benefit' => 'Benefit',
         ];
+    }
+
+    /**
+     * Gets query for [[CoursePlans]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCoursePlans()
+    {
+        return $this->hasMany(CoursePlan::class, ['plan_id' => 'id']);
     }
 
     /**
