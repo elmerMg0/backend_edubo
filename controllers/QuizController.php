@@ -2,47 +2,44 @@
 
 namespace app\controllers;
 
-use app\models\Clase;
-use app\models\Pregunta;
+use app\models\Quiz;
 use Exception;
 use Yii;
-use yii\data\Pagination;
 use yii\helpers\Json;
 use yii\web\UploadedFile;
 
-class PreguntaController extends \yii\web\Controller
+class QuizController extends \yii\web\Controller
 {
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        $behaviors["verbs"] = [
-            "class" => \yii\filters\VerbFilter::class,
-            "actions" => [
-                'index' => ['get'],
-                'create' => ['post'],
-                'update' => ['put', 'post'],
-                'delete' => ['delete'],
-                'get-questions' => ['get'],
-                'get-questions-by-class' => ['get'],
-                'questions' => ['get'],
+        $behaviors['verbs'] = [
+            'class' => \yii\filters\VerbFilter::class,
+            'actions' => [
+                'quizzes' => ['GET'],
+                'create' => ['POST'],
+                'update' => ['POST'],
             ]
         ];
-        $behaviors['authenticator'] = [
+         $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
             'except' => ['options']
         ];
-        $behaviors['access'] = [
+
+        /* $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['index', 'get-questions', 'create', 'update', 'get-questions-by-class', 'questions'], // acciones a las que se aplicará el control
+            'only' => ['classes', 'create', 'disable-class', 'update', 'get-class-with-questions', 'get-class-with-resources', 'get-class-progress'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['index', 'get-questions', 'create', 'update', 'get-questions-by-class', 'questions'], // acciones que siguen esta regla
+                    'actions' => ['classes', 'create', 'disable-class', 'update', 'get-class-with-questions', 'get-class-with-resources', 'get-class-progress'], // acciones que siguen esta regla
                     'roles' => ['manager'] // control por roles  permisos
                 ],
             ],
-        ];
+        ]; */
+
+
         return $behaviors;
     }
 
@@ -52,75 +49,37 @@ class PreguntaController extends \yii\web\Controller
             Yii::$app->getResponse()->getHeaders()->set('Allow', 'POST GET PUT');
             Yii::$app->end();
         }
-
         $this->enableCsrfValidation = false;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         return parent::beforeAction($action);
     }
-
-    public function actionIndex($name, $pageSize = 5)
+    
+    public function actionIndex()
     {
-        if ($name === 'undefined') $name = null;
-        $query = Pregunta::find()
-            ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
-
-        $pagination = new Pagination([
-            'defaultPageSize' => $pageSize,
-            'totalCount' => $query->count(),
-        ]);
-
-        $questions = $query
-            ->orderBy('id DESC')
-            ->offset($pagination->offset)
-            ->limit($pagination->limit)
-            ->all();
-
-        $currentPage = $pagination->getPage() + 1;
-        $totalPages = $pagination->getPageCount();
-        $response = [
-            'success' => true,
-            'message' => 'lista de preguntas',
-            'pageInfo' => [
-                'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
-                'previus' => $currentPage == 1 ? null : $currentPage - 1,
-                'count' => count($questions),
-                'page' => $currentPage,
-                'start' => $pagination->getOffset(),
-                'totalPages' => $totalPages,
-            ],
-            'questions' => $questions
-        ];
-        return $response;
+        return $this->render('index');
     }
 
-    public function actionGetQuestions()
-    {
-        $questions = Pregunta::find()
-            ->where(['estado' => 'Activo'])
-            ->orderBy(['id' => 'SORT_ASC'])
-            ->all();
+    public function actionQuizzes($id, $type){
+        $quizzes = Quiz::find();
 
-        if ($questions) {
-            $response = [
-                'success' => true,
-                'message' => 'Lista de preguntas',
-                'questions' => $questions,
-            ];
-        } else {
-            $response = [
-                'success' => false,
-                'message' => 'No existen preguntas',
-                'questions' => [],
-            ];
+        if ($type === 'course') {
+            $quizzes = $quizzes->where(['curso_id' => $id]);
         }
+        $quizzes = $quizzes->all();
 
+        $response = [
+            'success' => true,
+            'data' => [
+                'quizzes' => $quizzes
+            ]
+        ];
         return $response;
     }
 
     public function actionCreate()
     {
 
-        $question = new Pregunta();
+        $question = new Quiz();
         $file = UploadedFile::getInstanceByName('file');
         $data = Json::decode(Yii::$app->request->post('data'));
 
@@ -160,9 +119,9 @@ class PreguntaController extends \yii\web\Controller
     }
 
 
-    public function actionUpdate($idQuestion)
+    public function actionUpdate($idQuiz)
     {
-        $question = Pregunta::findOne($idQuestion);
+        $question = Quiz::findOne($idQuiz);
         if ($question) {
             $data = JSON::decode(Yii::$app->request->post('data'));
             $question->load($data, '');
@@ -223,57 +182,20 @@ class PreguntaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetQuestionsByClass($idClass)
-    {
-        $class = Clase::findOne($idClass);
-        if ($class) {
-            $questions = Pregunta::find()
-                ->where(['estado' => true, 'clase_id' => $idClass])
-                ->all();
-            $response = [
-                "success" => true,
-                "message" => "Lista de pregutnas por clase",
-                "category" => $class,
-                "products" => $questions
-            ];
-        } else {
-            Yii::$app->getResponse()->setStatusCode(404);
-            $response = [
-                "success" => false,
-                "message" => "Categoria no encontrada",
-            ];
+    public function actionQuizzesById($id, $type){
+        if($type === 'course'){
+            $quizzes = Quiz::find()
+                            ->where(['curso_id' => $id])
+                            ->all();
+        }else{
+
         }
-        return $response;
-    }
 
-    public function actionQuestions($idClass)
-    {
-        $questions = Pregunta::find()
-            ->where(['clase_id' => $idClass])
-            ->orderBy(['id' => SORT_DESC])
-            ->all();
         $response = [
-            "success" => true,
-            "message" => "Lista de pregutnas por clase",
-            "data" => [
-                "questions" => $questions
+            'success' => true,
+            'data' => [
+                'quizzes' => $quizzes
             ]
         ];
-        return $response;
-    }
-
-    public function actionQuestionsByCourse($idCourse){
-        $questions = Pregunta::find()
-            ->where(['quiz_id' => $idCourse])
-            ->orderBy(['id' => SORT_DESC])
-            ->all();
-        $response = [
-            "success" => true,
-            "message" => "Lista de pregutnas por clase",
-            "data" => [
-                "questions" => $questions
-            ]
-        ];
-        return $response;
     }
 }

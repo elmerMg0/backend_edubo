@@ -15,9 +15,10 @@ use Yii;
  * @property string|null $update_ts
  * @property string|null $subtitle
  * @property bool $active
- * @property int|null $curso_id
+ * @property int|null $quiz_id
  *
  * @property Clase $clase
+ * @property Quiz $quiz
  * @property Response[] $responses
  */
 class Pregunta extends \yii\db\ActiveRecord
@@ -37,14 +38,15 @@ class Pregunta extends \yii\db\ActiveRecord
     {
         return [
             [['descripcion', 'active'], 'required'],
-            [['clase_id', 'curso_id'], 'default', 'value' => null],
-            [['clase_id', 'curso_id'], 'integer'],
+            [['descripcion'], 'string'],
+            [['clase_id', 'quiz_id'], 'default', 'value' => null],
+            [['clase_id', 'quiz_id'], 'integer'],
             [['create_ts', 'update_ts'], 'safe'],
             [['active'], 'boolean'],
-            [['descripcion'], 'string', 'max' => 150],
             [['url_image'], 'string', 'max' => 50],
             [['subtitle'], 'string', 'max' => 250],
             [['clase_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clase::class, 'targetAttribute' => ['clase_id' => 'id']],
+            [['quiz_id'], 'exist', 'skipOnError' => true, 'targetClass' => Quiz::class, 'targetAttribute' => ['quiz_id' => 'id']],
         ];
     }
 
@@ -62,7 +64,7 @@ class Pregunta extends \yii\db\ActiveRecord
             'update_ts' => 'Update Ts',
             'subtitle' => 'Subtitle',
             'active' => 'Active',
-            'curso_id' => 'Curso ID',
+            'quiz_id' => 'Quiz ID',
         ];
     }
 
@@ -74,6 +76,16 @@ class Pregunta extends \yii\db\ActiveRecord
     public function getClase()
     {
         return $this->hasOne(Clase::class, ['id' => 'clase_id']);
+    }
+
+    /**
+     * Gets query for [[Quiz]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getQuiz()
+    {
+        return $this->hasOne(Quiz::class, ['id' => 'quiz_id']);
     }
 
     /**

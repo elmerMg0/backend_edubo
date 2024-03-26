@@ -12,6 +12,7 @@ use app\models\Inscripcion;
 use app\models\Plan;
 use app\models\Pregunta;
 use app\models\Professor;
+use app\models\Quiz;
 use app\models\Response;
 use app\models\RoadPlan;
 use app\models\RoadUser;
@@ -41,7 +42,8 @@ class ApiController extends \yii\web\Controller
                 'update-likes-sub' => ['GET'],
                 'quiz' => ['GET'],
                 'check' => ['GET'],
-                'create' => ['POST']
+                'create' => ['POST'],
+                'road-courses-questions' => ['GET'],
             ]
         ];
          $behaviors['authenticator'] = [
@@ -134,6 +136,34 @@ class ApiController extends \yii\web\Controller
         ];
         return $response;
     }
+
+    public function actionRoadCoursesQuestions($idRoad)
+    {
+        $idRoad = isset($idRoad) ? $idRoad : null;
+        $courses = Curso::find()
+            ->select(['curso.id', 'curso.name','curso.url_image' ,'count(quiz.id) as num_quizzes'])
+            ->where(['curso.ruta_aprendizaje_id' => $idRoad, 'curso.active' => true])
+            ->leftJoin('quiz', 'curso.id = quiz.curso_id')
+            ->groupBy('curso.id')
+            ->asArray()
+            ->orderBy(['id' => SORT_DESC])
+            ->all();
+        $path = RutaAprendizaje::findOne($idRoad);
+        $enrollment = RoadUser::find()
+                                ->where(['ruta_aprendizaje_id' => $idRoad, 'finished' => false, 'usuario_id' => Yii::$app->user->id])
+                                ->exists(); 
+        $response = [
+            'success' => true,
+            'message' => 'Lista de cursos por ruta de aprendizaje',
+            'data' => [
+                'courses' => $courses,
+                'pathInfo' => $path,
+                'enrollment' => $enrollment
+            ]
+        ];
+        return $response;
+    }
+
     public function actionCourseSample($idCourse){
         $course = Curso::find()
             ->select(['name', 'you_learn', 'id', 'url_image', 'ruta_aprendizaje_id'])
@@ -407,6 +437,33 @@ class ApiController extends \yii\web\Controller
         ];
 
         return $response;
+    }
+    public function actionQuizCourse($idCourse, $idQuiz){
+        $course = Curso::find() 
+                            -> select(['curso.url_image', 'curso.id', 'curso.name'])
+                            -> where(['id' => $idCourse])
+                            -> one();
+
+        $questions = Pregunta::find()
+            ->where(['quiz_id' => $idQuiz])
+            ->with(['responses' => function ($query) {
+                $query
+                    ->select(['response.description', 'response.id', 'response.pregunta_id', 'response.slug'])
+                    ->orderBy(['response.slug' => SORT_ASC]);
+            }])
+            ->asArray()
+            ->all();
+        
+        $response = [
+        'success' => true,
+        'message' => 'Lista de Cursos',
+        'data' => [
+            'course' =>  $course,
+            'questions' => $questions,
+        ]
+    ];
+
+    return $response;
     }
 
     public function actionCheck($idResponse)
@@ -872,6 +929,26 @@ class ApiController extends \yii\web\Controller
             die('Error');
         }
         $response = json_decode($res);
+        return $response;
+    }
+
+    public function actionQuizzes($id, $type){
+        if($type === 'course'){
+            $quizzes = Quiz::find()
+                            ->where(['curso_id' => $id, 'active' => true])
+                            ->all();
+        }else{
+            $quizzes = Quiz::find()
+                            ->where(['ruta_aprendizaje_id' => $id, 'active' => true])
+                            ->all();
+        }
+        $response = [
+            'success' => true,
+            'message' => 'Lista de Cuestionarios',
+            'data' => [
+                'quizzes' => $quizzes
+            ]
+        ];
         return $response;
     }
 }

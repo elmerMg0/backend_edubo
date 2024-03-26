@@ -26,8 +26,10 @@ use Yii;
  * @property int $professor_id
  *
  * @property Clase[] $clases
+ * @property CoursePlan[] $coursePlans
  * @property Inscripcion[] $inscripcions
  * @property Professor $professor
+ * @property Quiz[] $quizzes
  * @property RutaAprendizaje $rutaAprendizaje
  */
 class Curso extends \yii\db\ActiveRecord
@@ -98,6 +100,16 @@ class Curso extends \yii\db\ActiveRecord
     }
 
     /**
+     * Gets query for [[CoursePlans]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCoursePlans()
+    {
+        return $this->hasMany(CoursePlan::class, ['course_id' => 'id']);
+    }
+
+    /**
      * Gets query for [[Inscripcions]].
      *
      * @return \yii\db\ActiveQuery
@@ -115,6 +127,16 @@ class Curso extends \yii\db\ActiveRecord
     public function getProfessor()
     {
         return $this->hasOne(Professor::class, ['id' => 'professor_id']);
+    }
+
+    /**
+     * Gets query for [[Quizzes]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getQuizzes()
+    {
+        return $this->hasMany(Quiz::class, ['curso_id' => 'id']);
     }
 
     /**
