@@ -9,7 +9,7 @@ use Yii;
  *
  * @property int $id
  * @property string $nombre
- * @property string $apellido
+ * @property string|null $apellido
  * @property string $email
  * @property string|null $password_hash
  * @property string $access_token
@@ -20,6 +20,8 @@ use Yii;
  * @property string|null $url_image
  * @property string|null $type
  * @property bool $active
+ * @property string $username
+ * @property string|null $telefono
  *
  * @property Avance[] $avances
  * @property CommentLikes[] $commentLikes
@@ -46,16 +48,17 @@ class Usuario extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['nombre', 'apellido', 'email', 'access_token', 'plan_id'], 'required'],
+            [['nombre', 'email', 'access_token', 'plan_id', 'username'], 'required'],
             [['access_token'], 'string'],
             [['plan_id', 'puntos'], 'default', 'value' => null],
             [['plan_id', 'puntos'], 'integer'],
             [['create_ts', 'update_ts'], 'safe'],
             [['active'], 'boolean'],
-            [['nombre', 'type'], 'string', 'max' => 50],
+            [['nombre', 'type', 'username'], 'string', 'max' => 50],
             [['apellido'], 'string', 'max' => 80],
             [['email', 'password_hash'], 'string', 'max' => 250],
             [['url_image'], 'string', 'max' => 100],
+            [['telefono'], 'string', 'max' => 11],
         ];
     }
 
@@ -78,6 +81,8 @@ class Usuario extends \yii\db\ActiveRecord
             'url_image' => 'Url Image',
             'type' => 'Type',
             'active' => 'Active',
+            'username' => 'Username',
+            'telefono' => 'Telefono',
         ];
     }
 
