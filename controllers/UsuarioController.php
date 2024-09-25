@@ -30,7 +30,7 @@ class UsuarioController extends \yii\web\Controller
 
         $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
-            'except' => ['options', 'login-user', 'get-role', 'login', 'register']
+            'except' => ['options', 'login-user', 'get-role', 'login', 'register', 'update']
         ];
 
         $behaviors['access'] = [
@@ -306,7 +306,8 @@ class UsuarioController extends \yii\web\Controller
                         'id' => $user->id,
                         'subscribed' => count($role) === 2 ? true : false,
                         'image' => $user->url_image,
-                        'name' => $user->nombre
+                        'name' => $user->nombre,
+                        'username' => $user->username 
                     ]
                 ];
             } else {
@@ -358,13 +359,13 @@ class UsuarioController extends \yii\web\Controller
             } else {
                 $response = [
                     'success' => false,
-                    'message' => 'Usuario o contraseñia incorrectos!',
+                    'message' => 'Usuario o contraseña incorrectos!',
                 ];
             }
         } else {
             $response = [
                 'success' => false,
-                'message' => 'Usuario o contraseñia incorrectos!'
+                'message' => 'Usuario o contraseña incorrectos!'
             ];
         }
         return $response;
@@ -373,13 +374,14 @@ class UsuarioController extends \yii\web\Controller
     private function actionCreateUserWithExternalService($data, $type)
     {
         //$params = Yii::$app->getRequest()->getBodyParams();
+        $lastName = property_exists($data, 'family_name') ? $data->family_name : '';
         $user = new Usuario();
         $user->nombre = $data->given_name;
-        $user->apellido = $data->family_name;
+        $user->apellido = $lastName;
         $user->email = $data->email;
         $user->url_image = $data->picture;
         $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data->id);
-        $user->access_token = $this->actionGetTokenJwt($data , $data -> given_name, $data -> family_name);
+        $user->access_token = $this->actionGetTokenJwt($data , $data -> given_name, $lastName);
         $user->plan_id = 1;
         $user->puntos = 20;
         if ($user->save()) {
@@ -564,4 +566,104 @@ class UsuarioController extends \yii\web\Controller
         }
         return $response;
     }
-}
+
+    public function actionGetUserData($username){
+        $params = Yii::$app->getRequest()->getBodyParams();
+        
+        
+        $user = Usuario::find()
+                            ->where(['id' => $params['id'], 'username' => $username])
+                            ->one();
+
+        if ($user && $user -> access_token === $params['token']) {
+            $response = [
+                'success' => true,
+                'message' => 'Información de usuario',
+                'data' => [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'image' => $user->url_image,
+                    'subscribed' => false,
+                    'name' => $user->nombre,
+                    'apellido' => $user->apellido,
+                    'telefono' => $user->telefono
+                ]
+            ];
+        } else {
+            Yii::$app->getResponse()->setStatusCode(401);
+            $response = [
+                'success' => false,
+                'message' => 'Parametros incorrectos',
+                'data' => [
+                    'username' => $username,
+                ]
+            ];
+        }
+
+        return $response;
+    }
+
+    public function actionUpdate(){
+        
+        $params = Json::decode(Yii::$app->request->post('data'));
+        $user = Usuario::find()
+                        ->where(['access_token' => $params['token']])
+                        ->one();
+        if ($user) {
+            $file = UploadedFile::getInstanceByName('image');
+            if ($file) {
+                $url_image = $user->url_image;
+                $imageOld = Yii::getAlias('@app/web/upload/' . $url_image);
+                if(file_exists($imageOld) && $url_image){
+                    unlink($imageOld);
+                    /* Eliminar */
+                }
+                $fileName = uniqid().'.'.$file->getExtension();
+                $file->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
+                $imageNew = Yii::getAlias('@app/web/upload/' . $fileName);
+                if(file_exists($imageNew)){
+                    $user -> url_image = $fileName;
+                }else{
+                    return $response = [
+                        'success' => false,
+                        'message' => 'Ocurrio un error!',
+                    ];
+                }
+                /* Si existe ya una imagen, borrarl y cargar la nueva */
+            }
+
+            $user -> load($params, '');
+            if ($user -> save()) {
+                $role = Yii::$app->authManager->getRolesByUser($user->id);
+                $response = [
+                    'success' => true,
+                    'message' => 'Información actualizada',
+                    'data' => [
+                        'accessToken' => $user->access_token,
+                        'id' => $user->id,
+                        'username' => $user->username,
+                        'subscribed' => count($role) === 2 ? true : false,
+                        'image' => $user->url_image,
+                        'name' => $user->nombre,
+                    ]
+                ];
+            }else{
+                Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
+                $response = [
+                    'success' => false,
+                    'message' => 'Parametros incorrectos',
+                    'usuario' => $user->errors,
+                ];
+            }
+        }else{
+            Yii::$app->getResponse()->setStatusCode(401);
+            $response = [
+                'success' => false,
+                'message' => 'Parametros incorrectos',
+            ];
+        }
+
+        return $response;
+    }
+}   

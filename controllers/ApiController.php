@@ -46,7 +46,7 @@ class ApiController extends \yii\web\Controller
                 'road-courses-questions' => ['GET'],
             ]
         ];
-         $behaviors['authenticator'] = [
+        $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
             'except' => ['options', 'learning-paths', 'plans']
         ];
@@ -79,8 +79,11 @@ class ApiController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionLearningPaths(){
-        $learningPaths = RutaAprendizaje::find()->all();
+    public function actionLearningPaths()
+    {
+        $learningPaths = RutaAprendizaje::find()
+            ->where(['active' => true])
+            ->all();
 
         $response = [
             'success' => true,
@@ -96,7 +99,8 @@ class ApiController extends \yii\web\Controller
     {
         $idRoad = isset($idRoad) ? $idRoad : null;
         $courses = RutaAprendizaje::find()
-            ->andFilterWhere(['id' => $idRoad])
+            ->where(['active' => true])
+            ->filterWhere(['id' => $idRoad])
             ->with('cursos')
             ->asArray()
             ->all();
@@ -123,8 +127,8 @@ class ApiController extends \yii\web\Controller
             ->all();
         $path = RutaAprendizaje::findOne($idRoad);
         $enrollment = RoadUser::find()
-                                ->where(['ruta_aprendizaje_id' => $idRoad, 'finished' => false, 'usuario_id' => Yii::$app->user->id])
-                                ->exists(); 
+            ->where(['ruta_aprendizaje_id' => $idRoad, 'finished' => false, 'usuario_id' => Yii::$app->user->id])
+            ->exists();
         $response = [
             'success' => true,
             'message' => 'Lista de cursos por ruta de aprendizaje',
@@ -141,7 +145,7 @@ class ApiController extends \yii\web\Controller
     {
         $idRoad = isset($idRoad) ? $idRoad : null;
         $courses = Curso::find()
-            ->select(['curso.id', 'curso.name','curso.url_image' ,'count(quiz.id) as num_quizzes'])
+            ->select(['curso.id', 'curso.name', 'curso.url_image', 'count(quiz.id) as num_quizzes'])
             ->where(['curso.ruta_aprendizaje_id' => $idRoad, 'curso.active' => true])
             ->leftJoin('quiz', 'curso.id = quiz.curso_id')
             ->groupBy('curso.id')
@@ -150,8 +154,8 @@ class ApiController extends \yii\web\Controller
             ->all();
         $path = RutaAprendizaje::findOne($idRoad);
         $enrollment = RoadUser::find()
-                                ->where(['ruta_aprendizaje_id' => $idRoad, 'finished' => false, 'usuario_id' => Yii::$app->user->id])
-                                ->exists(); 
+            ->where(['ruta_aprendizaje_id' => $idRoad, 'finished' => false, 'usuario_id' => Yii::$app->user->id])
+            ->exists();
         $response = [
             'success' => true,
             'message' => 'Lista de cursos por ruta de aprendizaje',
@@ -164,15 +168,16 @@ class ApiController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionCourseSample($idCourse){
+    public function actionCourseSample($idCourse)
+    {
         $course = Curso::find()
             ->select(['name', 'you_learn', 'id', 'url_image', 'ruta_aprendizaje_id'])
             ->where(['id' => $idCourse])
             ->one();
         $path = RutaAprendizaje::find()
-                                ->select(['numero_cursos', 'id', 'nombre', 'url_image'])
-                                ->where([ 'id' => $course -> ruta_aprendizaje_id])
-                                ->one();
+            ->select(['numero_cursos', 'id', 'nombre', 'url_image'])
+            ->where(['id' => $course->ruta_aprendizaje_id])
+            ->one();
         $response = [
             'success' => true,
             'message' => 'Curso y ruta de aprendizaje',
@@ -182,7 +187,6 @@ class ApiController extends \yii\web\Controller
             ]
         ];
         return $response;
-
     }
 
     public function actionCourse($idCourse)
@@ -198,48 +202,48 @@ class ApiController extends \yii\web\Controller
                 ->with([
                     'subjects' => function ($query) {
                         $query->select(['subject.title', 'subject.slug', 'subject.id', 'subject.clase_id', 'subject.duration', 'subject.type'])
-                            ->orderBy(['slug' => SORT_ASC]); 
+                            ->orderBy(['slug' => SORT_ASC]);
                     }
                 ])
                 ->asArray()
                 ->orderBy(['numero_clase' => SORT_ASC])
                 ->all();
-            
+
             $isEnrolledPath = RoadUser::find()
-                ->where(['ruta_aprendizaje_id' => $course -> ruta_aprendizaje_id,'finished' => false ,'usuario_id' => Yii::$app->user->getId()])
+                ->where(['ruta_aprendizaje_id' => $course->ruta_aprendizaje_id, 'finished' => false, 'usuario_id' => Yii::$app->user->getId()])
                 ->exists();
-            
+
             $isEnrolledCourse = Inscripcion::find()
-                ->where(['curso_id' => $idCourse,'finished' => false ,'usuario_id' => Yii::$app->user->getId()])
+                ->where(['curso_id' => $idCourse, 'finished' => false, 'usuario_id' => Yii::$app->user->getId()])
                 ->exists();
 
             $subscribed = false;
-            if($isEnrolledPath || $isEnrolledCourse){
+            if ($isEnrolledPath || $isEnrolledCourse) {
                 $subscribed = true;
-            }   
+            }
 
             //$course = Curso::findOne($idCourse);
             $teacher = Professor::findOne($course->professor_id);
 
             /* % de avance */
             $subjestCount = Clase::find()
-                            ->where(['curso_id' => $idCourse])
-                            ->innerJoin('subject', 'subject.clase_id = clase.id')
-                            ->count('subject.id');
+                ->where(['curso_id' => $idCourse])
+                ->innerJoin('subject', 'subject.clase_id = clase.id')
+                ->count('subject.id');
 
             $progress = Avance::find()
-                            ->innerJoin('subject', 'subject.id = avance.subject_id')
-                            ->innerJoin('clase', 'clase.id = subject.clase_id')
-                            ->innerJoin('curso', 'curso.id = clase.curso_id')
-                            ->where(['curso.id' => $idCourse, 'usuario_id' => Yii::$app->user->getId()])
-                            ->count('subject.id');
-                            
+                ->innerJoin('subject', 'subject.id = avance.subject_id')
+                ->innerJoin('clase', 'clase.id = subject.clase_id')
+                ->innerJoin('curso', 'curso.id = clase.curso_id')
+                ->where(['curso.id' => $idCourse, 'usuario_id' => Yii::$app->user->getId()])
+                ->count('subject.id');
+
             $progressTotal = 0;
-            if($progress > 0){
+            if ($progress > 0) {
                 $subjestCount = $subjestCount - count($classes);
                 $progressTotal = $progress / $subjestCount;
             }
-            
+
             $response = [
                 'success' => true,
                 'message' => 'Lista de Cursos',
@@ -259,7 +263,7 @@ class ApiController extends \yii\web\Controller
         }
         return $response;
     }
-    
+
     public function actionUpdateProgress($idSubject, $idStudent)
     {
         $newProgress = new Avance();
@@ -275,7 +279,7 @@ class ApiController extends \yii\web\Controller
             return $e;
         }
         return $newProgress;
-    }   
+    }
 
     public function actionGetClassProgress($idCourse, $idStudent, $slugSubject, $nroClase)
     {
@@ -293,7 +297,9 @@ class ApiController extends \yii\web\Controller
             ->innerJoin('clase', 'clase.id = subject.clase_id')
             ->innerJoin('curso', 'curso.id = clase.curso_id')
             ->where([
-                'curso.id' => $idCourse, 'usuario_id' => $idStudent, 'subject.slug' => $slugSubject,
+                'curso.id' => $idCourse,
+                'usuario_id' => $idStudent,
+                'subject.slug' => $slugSubject,
                 'clase.numero_clase' => $nroClase
             ])
             ->one();
@@ -311,13 +317,11 @@ class ApiController extends \yii\web\Controller
 
     public function actionGetComments($idSubject, $idStudent, $nroClass)
     {
-        $subject = Subject::find()->
-                                innerJoin('clase', 'clase.id = subject.clase_id')->
-                                where(['subject.slug' => $idSubject, 'clase.numero_clase' => $nroClass]) -> one();
+        $subject = Subject::find()->innerJoin('clase', 'clase.id = subject.clase_id')->where(['subject.slug' => $idSubject, 'clase.numero_clase' => $nroClass])->one();
         $comments = Comment::find()
             ->select(['comment.num_comments', 'usuario.nombre as name', 'usuario.apellido as lastName', 'usuario.url_image as avatar', 'comment.id', 'comment.comment_text', 'comment.num_likes'])
             ->innerJoin('usuario', 'usuario.id = comment.usuario_id')
-            ->where(['subject_id' => $subject -> id, 'comment.comment_id' => null])
+            ->where(['subject_id' => $subject->id, 'comment.comment_id' => null])
             ->with(['comments' => function ($query) {
                 $query
                     ->select(['comment.num_likes', 'comment.comment_text', 'comment.id', 'comment.comment_id', 'usuario.nombre as name', 'usuario.apellido as lastName', 'usuario.url_image as avatar'])
@@ -438,11 +442,12 @@ class ApiController extends \yii\web\Controller
 
         return $response;
     }
-    public function actionQuizCourse($idCourse, $idQuiz){
-        $course = Curso::find() 
-                            -> select(['curso.url_image', 'curso.id', 'curso.name'])
-                            -> where(['id' => $idCourse])
-                            -> one();
+    public function actionQuizCourse($idCourse, $idQuiz)
+    {
+        $course = Curso::find()
+            ->select(['curso.url_image', 'curso.id', 'curso.name'])
+            ->where(['id' => $idCourse])
+            ->one();
 
         $questions = Pregunta::find()
             ->where(['quiz_id' => $idQuiz])
@@ -453,17 +458,17 @@ class ApiController extends \yii\web\Controller
             }])
             ->asArray()
             ->all();
-        
-        $response = [
-        'success' => true,
-        'message' => 'Lista de Cursos',
-        'data' => [
-            'course' =>  $course,
-            'questions' => $questions,
-        ]
-    ];
 
-    return $response;
+        $response = [
+            'success' => true,
+            'message' => 'Lista de Cursos',
+            'data' => [
+                'course' =>  $course,
+                'questions' => $questions,
+            ]
+        ];
+
+        return $response;
     }
 
     public function actionCheck($idResponse)
@@ -489,26 +494,27 @@ class ApiController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionPlans($idRoad, $idCourse){
+    public function actionPlans($idRoad, $idCourse)
+    {
         $plansCourse = [];
         $course = null;
-        if($idCourse){
+        if ($idCourse) {
             $plansCourse = Plan::find()
-                                ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion', 'plan.benefit', 'course_plan.course_id'])
-                                ->where(['course_id' => $idCourse])
-                                ->innerJoin('course_plan', 'plan.id =  course_plan.plan_id')
-                                ->asArray()
-                                ->all();
-            $course = Curso::find()->select(['id', 'name', 'ruta_aprendizaje_id']) -> where(['id' => $idCourse]) -> one();
-            $idRoad = $course -> ruta_aprendizaje_id;
+                ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion', 'plan.benefit', 'course_plan.course_id'])
+                ->where(['course_id' => $idCourse])
+                ->innerJoin('course_plan', 'plan.id =  course_plan.plan_id')
+                ->asArray()
+                ->all();
+            $course = Curso::find()->select(['id', 'name', 'ruta_aprendizaje_id'])->where(['id' => $idCourse])->one();
+            $idRoad = $course->ruta_aprendizaje_id;
         }
 
         $plansRoad = Plan::find()
-                        ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion', 'plan.benefit', 'road_plan.ruta_aprendizaje_id'])
-                        ->innerJoin('road_plan', 'plan.id = road_plan.plan_id')
-                        ->where(['ruta_aprendizaje_id' => $idRoad, 'plan.active' => true])
-                        ->asArray()
-                        ->all();
+            ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion', 'plan.benefit', 'road_plan.ruta_aprendizaje_id'])
+            ->innerJoin('road_plan', 'plan.id = road_plan.plan_id')
+            ->where(['ruta_aprendizaje_id' => $idRoad, 'plan.active' => true])
+            ->asArray()
+            ->all();
         $path = RutaAprendizaje::findOne($idRoad);
 
         $response = [
@@ -521,38 +527,39 @@ class ApiController extends \yii\web\Controller
                 'plansCourse' => $plansCourse
             ]
         ];
-        return $response;                 
+        return $response;
     }
 
-    public function actionPlan(){
+    public function actionPlan()
+    {
         //type, id can be course or path
-        $params = Yii::$app -> getRequest() -> getBodyParams();
+        $params = Yii::$app->getRequest()->getBodyParams();
         $item = null;
         $road = null;
-        if($params['type'] == 'course'){
+        if ($params['type'] == 'course') {
             $item = Curso::find()
-                            ->select(['name', 'url_image', 'id', 'subtitle', 'id'])
-                            ->where(['id' => $params['id']]) 
-                            ->one();
+                ->select(['name', 'url_image', 'id', 'subtitle', 'id'])
+                ->where(['id' => $params['id']])
+                ->one();
             $info = CoursePlan::find()
-                            ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion'])
-                            ->where(['course_id' => $item -> id])
-                            ->innerJoin('plan', 'plan.id =  course_plan.plan_id')
-                            ->asArray()
-                            ->one();
-            $road = RutaAprendizaje::find() -> select('id', 'nombre') -> where(['id' => $item -> ruta_aprendizaje_id]) -> one();
-        }else{
+                ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion'])
+                ->where(['course_id' => $item->id])
+                ->innerJoin('plan', 'plan.id =  course_plan.plan_id')
+                ->asArray()
+                ->one();
+            $road = RutaAprendizaje::find()->select('id', 'nombre')->where(['id' => $item->ruta_aprendizaje_id])->one();
+        } else {
             $item = RutaAprendizaje::find()
-                            ->select(['id', 'url_image', 'descripcion', 'numero_cursos', 'nombre'])
-                            ->where(['id' => $params['id']])
-                            ->one();
+                ->select(['id', 'url_image', 'descripcion', 'numero_cursos', 'nombre'])
+                ->where(['id' => $params['id']])
+                ->one();
             $info = RoadPlan::find()
-                            ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion'])
-                            ->where(['ruta_aprendizaje_id' => $item -> id])
-                            ->innerJoin('plan', 'plan.id =  road_plan.plan_id')
-                            ->asArray()
-                            ->one();
-            $road = $item;   
+                ->select(['plan.id', 'plan.nombre', 'plan.precio_total', 'plan.duracion'])
+                ->where(['ruta_aprendizaje_id' => $item->id])
+                ->innerJoin('plan', 'plan.id =  road_plan.plan_id')
+                ->asArray()
+                ->one();
+            $road = $item;
         }
 
         $response = [
@@ -568,67 +575,69 @@ class ApiController extends \yii\web\Controller
         return $response;
     }
 
-    private function enroll($params){
+    private function enroll($params)
+    {
         /* Plan elegido, estudiante, curso o ruta */
         /* Validar que si ya tiene un plan activo no se pueda inscribir */
-        try{
-            $enrollment = $this -> enrollFactory($params['type'], $params['id']);//id can be course or path
-            $enrollment -> usuario_id = $params['student'];
-            $enrollment -> plan_id = $params['plan'];
-            $enrollment -> expire_date = $this -> incrementarMeses($params['quantity']);
-            $enrollment -> create_ts = date('Y-m-d H:i:s');
-            $enrollment -> months = $params['quantity'];
-            $enrollment -> finished = false;
-            $enrollment -> save();
+        try {
+            $enrollment = $this->enrollFactory($params['type'], $params['id']); //id can be course or path
+            $enrollment->usuario_id = $params['student'];
+            $enrollment->plan_id = $params['plan'];
+            $enrollment->expire_date = $this->incrementarMeses($params['quantity']);
+            $enrollment->create_ts = date('Y-m-d H:i:s');
+            $enrollment->months = $params['quantity'];
+            $enrollment->finished = false;
+            $enrollment->save();
             $auth = Yii::$app->authManager;
             $role = $auth->getRole('studentpro');
-            $auth -> assign($role, $params['student']);
+            $auth->assign($role, $params['student']);
             $response = [
                 'success' => true,
                 'message' => 'Register created'
             ];
-    
-        }catch(Exception $e){
+        } catch (Exception $e) {
             $response = [
                 'success' => false,
-                'message' => 'Ocurrio un error '.$e
+                'message' => 'Ocurrio un error ' . $e
             ];
         }
-      
+
         return $response;
     }
 
-    private function incrementarMeses($n) {
+    private function incrementarMeses($n)
+    {
         // Crear un objeto DateTime con la fecha proporcionada
         $fecha = new DateTime();
-    
+
         // Incrementar la cantidad de meses
         $fecha->add(new DateInterval("P{$n}M"));
-    
+
         // Obtener la nueva fecha
         $nuevoAnio = $fecha->format('Y');
         $nuevoMes = $fecha->format('m');
         $nuevoDia = $fecha->format('d');
-    
+
         // Devolver la nueva fecha como arreglo asociativo
-      /*   return [
+        /*   return [
             'anio' => $nuevoAnio,
             'mes' => $nuevoMes,
             'dia' => $nuevoDia
         ]; */
         return $nuevoAnio . '-' . $nuevoMes . '-' . $nuevoDia;
     }
- 
-    private function enrollFactory($type, $id){
+
+    private function enrollFactory($type, $id)
+    {
         $enrollment = null;
-        switch($type){
+        switch ($type) {
             case 'course':
                 $enrollment = new Inscripcion();
-                $enrollment -> curso_id = $id;
+                $enrollment->curso_id = $id;
                 break;
             case 'path':
                 $enrollment = new RoadUser();
-                $enrollment -> ruta_aprendizaje_id = $id;
+                $enrollment->ruta_aprendizaje_id = $id;
                 break;
         }
         return $enrollment;
@@ -637,15 +646,15 @@ class ApiController extends \yii\web\Controller
     {
         $params = Yii::$app->getRequest()->getBodyParams();
         $api_key = Yii::$app->params['keygpt'];
-        
-        $api_url = 'https://api.openai.com/v1/chat/completions';  
+
+        $api_url = 'https://api.openai.com/v1/chat/completions';
         // Parámetros de la solicitud
         $temperature = 0.0;
         $max_tokens = 60;
         $top_p = 1.0;
         $frequency_penalty = 0.5;
         $presence_penalty = 0.0;
-        
+
         // Texto de entrada para la solicitud
         $input_text = 'Diseña un sistema de clasificación de sentimientos para evaluar respuestas a preguntas en el área de matemáticas y ciencias. La tarea principal es determinar si el comentario es positivo, negativo o neutral. La API debe manejar consultas sobre temas específicos como álgebra, cálculo, biología, química y física.
 
@@ -667,8 +676,8 @@ class ApiController extends \yii\web\Controller
         
         Usuario: "¿Cuánto cuesta el último iPhone?"
         negativo
-        El mensaje proporcionado por el usuario es el siguiente: '. $params['comment_text'];
-        $model = 'gpt-3.5-turbo';          
+        El mensaje proporcionado por el usuario es el siguiente: ' . $params['comment_text'];
+        $model = 'gpt-3.5-turbo';
         // Construir el cuerpo de la solicitud
         $data = array(
             'messages' => [
@@ -703,8 +712,8 @@ class ApiController extends \yii\web\Controller
         // Ejecutar la solicitud
         $response = curl_exec($ch);
         $json = json_decode($response, true);
-        $responseAPi = $json['choices'][0]['message']['content']; 
-        if($responseAPi == 'negativo'){
+        $responseAPi = $json['choices'][0]['message']['content'];
+        if ($responseAPi == 'negativo') {
             return [
                 "success" => false,
                 "message" => "No se pudo enviar el comentario",
@@ -723,11 +732,11 @@ class ApiController extends \yii\web\Controller
         }
         try {
             $subject = Subject::find()
-                                ->where(['subject.slug' => $params['slugSubject'], 'numero_clase' => $params['nroClass'], 'curso.id' => $params['courseId']])
-                                ->innerJoin('clase', 'clase.id = subject.clase_id')
-                                ->innerJoin('curso', 'curso.id = clase.curso_id')
-                                ->one();
-            $comment -> subject_id = $subject->id;
+                ->where(['subject.slug' => $params['slugSubject'], 'numero_clase' => $params['nroClass'], 'curso.id' => $params['courseId']])
+                ->innerJoin('clase', 'clase.id = subject.clase_id')
+                ->innerJoin('curso', 'curso.id = clase.curso_id')
+                ->one();
+            $comment->subject_id = $subject->id;
             if ($comment->save()) {
                 //todo ok
                 Yii::$app->getResponse()->setStatusCode(201);
@@ -757,53 +766,53 @@ class ApiController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionRecentClass(){
-        $params = Yii::$app -> getRequest() -> getBodyParams();
-        $enrollment = RoadUser::find()->where(['usuario_id' => 10, 'finished' => false]) -> all();
+    public function actionRecentClass()
+    {
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $enrollment = RoadUser::find()->where(['usuario_id' => 10, 'finished' => false])->all();
         $recentClasses = [];
-        if($enrollment){
-            foreach($enrollment as $enrollment){
+        if ($enrollment) {
+            foreach ($enrollment as $enrollment) {
                 $learningPath = RutaAprendizaje::find()->where(['id' => $enrollment->ruta_aprendizaje_id])->one();
                 $courses = Curso::find()->where(['ruta_aprendizaje_id' => $learningPath->id, 'active' => true])->all();
-                foreach($courses as $course){
+                foreach ($courses as $course) {
                     $infoCourse = Curso::find()
-                                    ->select(['curso.id','avance.create_ts', 'curso.url_image', 'curso.name', 'curso.slug', 'curso.id as courseId', 'clase.numero_clase', 'subject.slug as subjectSlug', 'subject.title', 'subject.thumbnailurl'])
-                                    ->where(['curso.id' => $course->id, 'avance.usuario_id' => $params['idStudent']]) 
-                                    ->innerJoin('clase', 'clase.curso_id = curso.id')
-                                    ->innerJoin('subject', 'subject.clase_id = clase.id')
-                                    ->innerJoin('avance', 'avance.subject_id = subject.id')
-                                    ->orderBy(['avance.create_ts' => SORT_DESC])
-                                    ->asArray()
-                                    ->one();
-                    if($infoCourse){
-                        $infoCourse['learningPathSlug'] = $learningPath -> id . '-' . $learningPath -> slug;
+                        ->select(['curso.id', 'avance.create_ts', 'curso.url_image', 'curso.name', 'curso.slug', 'curso.id as courseId', 'clase.numero_clase', 'subject.slug as subjectSlug', 'subject.title', 'subject.thumbnailurl'])
+                        ->where(['curso.id' => $course->id, 'avance.usuario_id' => $params['idStudent']])
+                        ->innerJoin('clase', 'clase.curso_id = curso.id')
+                        ->innerJoin('subject', 'subject.clase_id = clase.id')
+                        ->innerJoin('avance', 'avance.subject_id = subject.id')
+                        ->orderBy(['avance.create_ts' => SORT_DESC])
+                        ->asArray()
+                        ->one();
+                    if ($infoCourse) {
+                        $infoCourse['learningPathSlug'] = $learningPath->id . '-' . $learningPath->slug;
                         $recentClasses[] = $infoCourse;
                     }
                 }
             }
 
-            $enrollmentCourses = Inscripcion::find()->where(['usuario_id' => 10, 'finished' => false]) -> all();
-            if($enrollmentCourses){
-                foreach($enrollmentCourses as $enrollmentCourse){
+            $enrollmentCourses = Inscripcion::find()->where(['usuario_id' => 10, 'finished' => false])->all();
+            if ($enrollmentCourses) {
+                foreach ($enrollmentCourses as $enrollmentCourse) {
                     $infoCourse = Curso::find()
-                    ->select(['curso.id','avance.create_ts', 'curso.url_image', 'curso.name', 'curso.slug', 'curso.id as courseId', 'clase.numero_clase', 'subject.slug as subjectSlug', 'subject.title', 'subject.thumbnailurl'])
-                    ->where(['curso.id' => $enrollmentCourse->curso_id, 'avance.usuario_id' => $params['idStudent']]) 
-                    ->innerJoin('clase', 'clase.curso_id = curso.id')
-                    ->innerJoin('subject', 'subject.clase_id = clase.id')
-                    ->innerJoin('avance', 'avance.subject_id = subject.id')
-                    ->orderBy(['avance.create_ts' => SORT_DESC])
-                    ->asArray()
-                    ->one();
-                    if($infoCourse){
-                        $infoCourse['learningPathSlug'] = $learningPath -> id . '-' . $learningPath -> slug;
+                        ->select(['curso.id', 'avance.create_ts', 'curso.url_image', 'curso.name', 'curso.slug', 'curso.id as courseId', 'clase.numero_clase', 'subject.slug as subjectSlug', 'subject.title', 'subject.thumbnailurl'])
+                        ->where(['curso.id' => $enrollmentCourse->curso_id, 'avance.usuario_id' => $params['idStudent']])
+                        ->innerJoin('clase', 'clase.curso_id = curso.id')
+                        ->innerJoin('subject', 'subject.clase_id = clase.id')
+                        ->innerJoin('avance', 'avance.subject_id = subject.id')
+                        ->orderBy(['avance.create_ts' => SORT_DESC])
+                        ->asArray()
+                        ->one();
+                    if ($infoCourse) {
+                        $infoCourse['learningPathSlug'] = $learningPath->id . '-' . $learningPath->slug;
                         $recentClasses[] = $infoCourse;
                     }
                     $recentClasses[] = $enrollmentCourse->curso_id;
                 }
             }
-
         }
-       
+
 
         $response = [
             'success' => true,
@@ -815,34 +824,35 @@ class ApiController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionPaymentQr(){
-        $params = Yii::$app -> getRequest() -> getBodyParams();
-        if($params['type'] == 'course'){
+    public function actionPaymentQr()
+    {
+        $params = Yii::$app->getRequest()->getBodyParams();
+        if ($params['type'] == 'course') {
             $plan = CoursePlan::find()
-                        ->select(['plan.precio_total'])
-                        ->innerJoin('plan', 'plan.id = course_plan.plan_id')
-                        ->where(['course_id' =>  $params['id']])
-                        ->asArray()
-                        ->one();
-        }else{
+                ->select(['plan.precio_total'])
+                ->innerJoin('plan', 'plan.id = course_plan.plan_id')
+                ->where(['course_id' =>  $params['id']])
+                ->asArray()
+                ->one();
+        } else {
             $plan = RoadPlan::find()
-                        ->select(['plan.precio_total'])
-                        ->innerJoin('plan', 'plan.id = road_plan.plan_id')
-                        ->where(['ruta_aprendizaje_id' => $params['id']])
-                        ->asArray()
-                        ->one();
+                ->select(['plan.precio_total'])
+                ->innerJoin('plan', 'plan.id = road_plan.plan_id')
+                ->where(['ruta_aprendizaje_id' => $params['id']])
+                ->asArray()
+                ->one();
         }
         $quantity = $plan['precio_total'] * $params['quantity'];
-        try{
-            $qr = $this -> getQr($quantity);
+        try {
+            $qr = $this->getQr($quantity);
             $response = [
                 'success' => true,
                 'message' => 'Informacion',
                 'data' => [
-                    'qr' => $qr -> Data
+                    'qr' => $qr->Data
                 ]
-                ];
-        }catch (Exception $e){
+            ];
+        } catch (Exception $e) {
             $response = [
                 'success' => false,
                 'message' => 'Ocurrio un error',
@@ -853,7 +863,7 @@ class ApiController extends \yii\web\Controller
 
     private static function getQr($amount)
     {
-    
+
         $key = Yii::$app->params['secret_key'];
         $username = Yii::$app->params['username_qr'];
         $pwd = Yii::$app->params['password_qr'];
@@ -883,20 +893,21 @@ class ApiController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionVerify(){
-        $params = Yii::$app -> getRequest() -> getBodyParams();
-        $info = $this -> verififyPayment($params['movimiento_id']);
-        if($info -> Data && $info -> Data -> estado == 'Completado'){
-            $this -> enroll($params);
+    public function actionVerify()
+    {
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $info = $this->verififyPayment($params['movimiento_id']);
+        if ($info->Data && $info->Data->estado == 'Completado') {
+            $this->enroll($params);
             $response = [
                 'success' => true,
                 'message' => 'Confirmacion',
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'No se pudo confirmar el pago',
-                ];
+            ];
         }
         return $response;
     }
@@ -904,7 +915,7 @@ class ApiController extends \yii\web\Controller
 
     private static function verififyPayment($amount)
     {
-    
+
         $key = Yii::$app->params['secret_key'];
         $username = Yii::$app->params['username_qr'];
         $pwd = Yii::$app->params['password_qr'];
@@ -932,15 +943,16 @@ class ApiController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionQuizzes($id, $type){
-        if($type === 'course'){
+    public function actionQuizzes($id, $type)
+    {
+        if ($type === 'course') {
             $quizzes = Quiz::find()
-                            ->where(['curso_id' => $id, 'active' => true])
-                            ->all();
-        }else{
+                ->where(['curso_id' => $id, 'active' => true])
+                ->all();
+        } else {
             $quizzes = Quiz::find()
-                            ->where(['ruta_aprendizaje_id' => $id, 'active' => true])
-                            ->all();
+                ->where(['ruta_aprendizaje_id' => $id, 'active' => true])
+                ->all();
         }
         $response = [
             'success' => true,
@@ -952,4 +964,3 @@ class ApiController extends \yii\web\Controller
         return $response;
     }
 }
-
